@@ -14,6 +14,7 @@ const config = {
   }
 };
 
+
 // Get current environment
 const ENV = process.env.REACT_APP_ENV || 'development';
 
