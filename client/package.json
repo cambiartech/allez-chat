@@ -52,6 +52,7 @@
   },
   "devDependencies": {
     "@types/react-native": "^0.72.8",
+    "@types/react-router-dom": "^5.3.3",
     "react-native-webview": "^13.13.5"
   }
 }

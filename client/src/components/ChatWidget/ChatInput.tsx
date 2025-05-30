@@ -28,7 +28,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         placeholder="Type a message..."
       />
       <SendButton onClick={onSend} disabled={!value.trim()}>
-        <IoMdSend size={20} />
+        <IoMdSend size={20} aria-hidden="true" />
       </SendButton>
     </Container>
   );

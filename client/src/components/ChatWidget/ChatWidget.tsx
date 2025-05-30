@@ -59,7 +59,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
         >
-          <BsChatDots size={24} style={{ display: 'block' }} />
+          <BsChatDots size={24} style={{ display: 'block' }} aria-hidden="true" />
         </ChatButton>
       )}
 

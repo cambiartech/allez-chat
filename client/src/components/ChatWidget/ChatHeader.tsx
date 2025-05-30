@@ -18,7 +18,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ tripId, onClose, isConne
         </Status>
       </div>
       <CloseButton onClick={onClose}>
-        <IoMdClose size={24} />
+        <IoMdClose size={24} aria-hidden="true" />
       </CloseButton>
     </Header>
   );
