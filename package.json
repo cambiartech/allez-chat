@@ -4,9 +4,10 @@
     "description": "Real-time chat widget for Allez taxi app",
     "scripts": {
         "dev": "netlify dev",
-        "build": "cd client && npm run build",
+        "build": "npm run install-client && cd client && npm run build",
         "start": "netlify dev",
-        "install:all": "npm install && cd client && npm install"
+        "install:all": "npm install && cd client && npm install",
+        "install-client": "cd client && npm install"
     },
     "dependencies": {
         "@netlify/functions": "^2.0.0",

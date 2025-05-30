@@ -12,8 +12,6 @@
   from = "/*"
   to = "/index.html"
   status = 200
-  force = false
-  conditions = {Role = ["admin", "user"]}
 
 # Handle API routes
 [[redirects]]
@@ -30,6 +28,7 @@
 
 [context.production.environment]
   REACT_APP_ENV = "production"
+  NODE_VERSION = "16"
 
 [context.staging.environment]
   REACT_APP_ENV = "staging" 
