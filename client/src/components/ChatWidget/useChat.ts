@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Message, TypingUser } from '../../types/chat';
+import config from '../../config';
 
 interface ChatUser {
   userId: string;
@@ -11,18 +12,17 @@ interface UseChatProps {
   tripId: string;
   userId: string;
   userType: 'driver' | 'rider' | 'admin';
-  serverUrl: string;
 }
 
-export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) => {
+export const useChat = ({ tripId, userId, userType }: UseChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    // Initialize socket connection
-    const socket = io(serverUrl);
+    // Initialize socket connection using config URL
+    const socket = io(config.SOCKET_URL);
     socketRef.current = socket;
 
     // Connect to chat room
@@ -50,7 +50,7 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
     return () => {
       socket.disconnect();
     };
-  }, [tripId, userId, userType, serverUrl]);
+  }, [tripId, userId, userType]);
 
   const sendMessage = useCallback((message: string | Message[]) => {
     if (Array.isArray(message)) {
@@ -63,18 +63,28 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
         timestamp: new Date().toISOString()
       };
       setMessages(prevMessages => [...prevMessages, newMessage]);
+      
+      // Emit the message through socket
+      if (socketRef.current) {
+        socketRef.current.emit('send_message', newMessage);
+      }
     }
   }, [userId, userType]);
 
   const startTyping = useCallback((users?: TypingUser[]) => {
     if (users) {
       setTypingUsers(users);
+    } else if (socketRef.current) {
+      socketRef.current.emit('typing_start', { userId, userType });
     }
-  }, []);
+  }, [userId, userType]);
 
   const stopTyping = useCallback(() => {
+    if (socketRef.current) {
+      socketRef.current.emit('typing_stop', { userId, userType });
+    }
     setTypingUsers([]);
-  }, []);
+  }, [userId, userType]);
 
   return {
     messages,

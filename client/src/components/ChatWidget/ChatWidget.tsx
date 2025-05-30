@@ -11,7 +11,6 @@ interface ChatWidgetProps {
   tripId: string;
   userId: string;
   userType: 'driver' | 'rider' | 'admin';
-  serverUrl?: string;
   initiallyOpen?: boolean;
 }
 
@@ -19,7 +18,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   tripId,
   userId,
   userType,
-  serverUrl = 'http://localhost:5001',
   initiallyOpen = false
 }) => {
   const {
@@ -29,7 +27,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     sendMessage,
     startTyping,
     stopTyping
-  } = useChat({ tripId, userId, userType, serverUrl });
+  } = useChat({ tripId, userId, userType });
 
   const [isOpen, setIsOpen] = useState(initiallyOpen);
   const [inputMessage, setInputMessage] = useState('');
@@ -51,9 +49,12 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // For driver/rider views, always show full screen
+  const isAppView = userType === 'driver' || userType === 'rider';
+
   return (
     <>
-      {!isOpen && (
+      {!isOpen && !isAppView && (
         <ChatButton
           onClick={() => setIsOpen(true)}
           whileHover={{ scale: 1.1 }}
@@ -64,15 +65,16 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       )}
 
       <AnimatePresence>
-        {isOpen && (
+        {(isOpen || isAppView) && (
           <ChatContainer
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
+            $isAppView={isAppView}
           >
             <ChatHeader
               tripId={tripId}
-              onClose={() => setIsOpen(false)}
+              onClose={() => !isAppView && setIsOpen(false)}
               isConnected={isConnected}
             />
 
@@ -106,7 +108,7 @@ const ChatButton = styled(motion.button)`
   width: 60px;
   height: 60px;
   border-radius: 30px;
-  background-color: #f05a29;
+  background-color: #007AFF;
   border: none;
   color: white;
   cursor: pointer;
@@ -117,15 +119,15 @@ const ChatButton = styled(motion.button)`
   z-index: 1000;
 `;
 
-const ChatContainer = styled(motion.div)`
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 350px;
-  height: 500px;
+const ChatContainer = styled(motion.div)<{ $isAppView: boolean }>`
+  position: ${props => props.$isAppView ? 'fixed' : 'fixed'};
+  bottom: ${props => props.$isAppView ? '0' : '20px'};
+  right: ${props => props.$isAppView ? '0' : '20px'};
+  width: ${props => props.$isAppView ? '100%' : '350px'};
+  height: ${props => props.$isAppView ? '100%' : '500px'};
   background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  border-radius: ${props => props.$isAppView ? '0' : '12px'};
+  box-shadow: ${props => props.$isAppView ? 'none' : '0 5px 20px rgba(0, 0, 0, 0.15)'};
   display: flex;
   flex-direction: column;
   overflow: hidden;
