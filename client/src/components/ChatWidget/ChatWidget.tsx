@@ -106,7 +106,7 @@ const ChatButton = styled(motion.button)`
   width: 60px;
   height: 60px;
   border-radius: 30px;
-  background-color: #007AFF;
+  background-color: #f05a29;
   border: none;
   color: white;
   cursor: pointer;

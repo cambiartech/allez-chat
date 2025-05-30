@@ -53,7 +53,7 @@ const Input = styled.input`
   transition: border-color 0.2s;
 
   &:focus {
-    border-color: #007AFF;
+    border-color: #f05a29;
   }
 `;
 
@@ -61,7 +61,7 @@ const SendButton = styled.button<{ disabled: boolean }>`
   width: 40px;
   height: 40px;
   border-radius: 20px;
-  background-color: ${props => props.disabled ? '#E9ECEF' : '#007AFF'};
+  background-color: ${props => props.disabled ? '#E9ECEF' : '#f05a29'};
   border: none;
   color: white;
   display: flex;

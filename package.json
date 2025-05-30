@@ -11,7 +11,9 @@
     },
     "dependencies": {
         "@netlify/functions": "^2.0.0",
+        "@types/react-router-dom": "^5.3.3",
         "mongodb": "^6.0.0",
+        "react-router-dom": "^7.6.1",
         "socket.io": "^4.7.0",
         "typescript": "^5.0.0"
     },

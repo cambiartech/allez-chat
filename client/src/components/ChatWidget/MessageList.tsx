@@ -60,7 +60,7 @@ const MessageBubble = styled.div<{ isOwn: boolean }>`
   max-width: 70%;
   padding: 10px 15px;
   border-radius: 15px;
-  background-color: ${props => (props.isOwn ? '#007AFF' : 'white')};
+  background-color: ${props => (props.isOwn ? '#f05a29' : 'white')};
   color: ${props => (props.isOwn ? 'white' : 'black')};
   align-self: ${props => (props.isOwn ? 'flex-end' : 'flex-start')};
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
