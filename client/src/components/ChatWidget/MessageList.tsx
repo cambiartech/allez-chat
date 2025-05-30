@@ -7,17 +7,24 @@ interface MessageListProps {
   currentUserId: string;
   typingUsers: TypingUser[];
   messagesEndRef: RefObject<HTMLDivElement>;
+  isLoadingHistory?: boolean;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
   messages,
   currentUserId,
   typingUsers,
-  messagesEndRef
+  messagesEndRef,
+  isLoadingHistory = false
 }) => {
   return (
     <Container>
       <MessagesWrapper>
+        {isLoadingHistory && (
+          <LoadingIndicator>
+            Loading message history...
+          </LoadingIndicator>
+        )}
         {messages.map((msg, index) => (
           <MessageBubble
             key={`${msg.timestamp}-${index}`}
@@ -80,6 +87,13 @@ const MessageTime = styled.span`
 `;
 
 const TypingIndicator = styled.div`
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+  padding: 5px 0;
+`;
+
+const LoadingIndicator = styled.div`
   font-size: 12px;
   color: #666;
   font-style: italic;

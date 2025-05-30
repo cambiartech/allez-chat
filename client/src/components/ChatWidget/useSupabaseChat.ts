@@ -10,11 +10,21 @@ interface UseChatProps {
   supabaseKey?: string;
 }
 
+interface DatabaseMessage {
+  id: string;
+  trip_id: string;
+  user_id: string;
+  user_type: string;
+  message: string;
+  created_at: string;
+}
+
 export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabaseKey }: UseChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const supabaseRef = useRef<SupabaseClient | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
@@ -99,7 +109,7 @@ export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabas
             online_at: new Date().toISOString(),
           });
 
-          // Load message history (you can implement this with a database table)
+          // Load message history from database
           loadMessageHistory();
         } else if (status === 'CHANNEL_ERROR') {
           setError('Failed to connect to chat');
@@ -120,13 +130,91 @@ export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabas
   }, [tripId, userId, userType, supabaseUrl, supabaseKey]);
 
   const loadMessageHistory = useCallback(async () => {
-    // This would load messages from a Supabase table
-    // For now, we'll just set an empty array
+    if (!supabaseRef.current) return;
+    
+    setIsLoadingHistory(true);
     console.log('Loading message history for trip:', tripId);
-    // You can implement this by creating a 'messages' table in Supabase
+    
+    try {
+      const { data, error } = await supabaseRef.current
+        .from('chat_messages')
+        .select('*')
+        .eq('trip_id', tripId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading message history:', error);
+        // Don't set error state for missing table - it's optional
+        if (!error.message.includes('relation "chat_messages" does not exist')) {
+          setError(`Failed to load message history: ${error.message}`);
+        }
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const historyMessages: Message[] = data.map((dbMsg: DatabaseMessage) => ({
+          userId: dbMsg.user_id,
+          userType: dbMsg.user_type as 'driver' | 'rider' | 'admin',
+          message: dbMsg.message,
+          timestamp: dbMsg.created_at
+        }));
+        
+        console.log(`Loaded ${historyMessages.length} messages from history`);
+        setMessages(historyMessages);
+      }
+    } catch (error) {
+      console.error('Error loading message history:', error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
   }, [tripId]);
 
-  const sendMessage = useCallback((message: string | Message[]) => {
+  const saveMessageToDatabase = useCallback(async (message: Message) => {
+    if (!supabaseRef.current) return;
+    
+    try {
+      const { error } = await supabaseRef.current
+        .from('chat_messages')
+        .insert({
+          trip_id: tripId,
+          user_id: message.userId,
+          user_type: message.userType,
+          message: message.message,
+          created_at: message.timestamp
+        });
+
+      if (error) {
+        console.error('Error saving message to database:', error);
+        // Don't throw error - real-time still works without persistence
+      }
+    } catch (error) {
+      console.error('Error saving message to database:', error);
+    }
+  }, [tripId]);
+
+  const cleanupOldMessages = useCallback(async () => {
+    if (!supabaseRef.current) return;
+    
+    try {
+      // Delete messages older than 2 hours
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+      
+      const { error } = await supabaseRef.current
+        .from('chat_messages')
+        .delete()
+        .lt('created_at', twoHoursAgo);
+
+      if (error) {
+        console.error('Error cleaning up old messages:', error);
+      } else {
+        console.log('Cleaned up messages older than 2 hours');
+      }
+    } catch (error) {
+      console.error('Error cleaning up old messages:', error);
+    }
+  }, []);
+
+  const sendMessage = useCallback(async (message: string | Message[]) => {
     if (!channelRef.current || !isConnected) {
       console.warn('Attempting to send message while not connected');
       return;
@@ -145,14 +233,22 @@ export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabas
       
       console.log('Sending message:', newMessage);
       
-      // Broadcast the message to all subscribers
+      // Save to database first (for persistence)
+      await saveMessageToDatabase(newMessage);
+      
+      // Then broadcast the message to all subscribers (for real-time)
       channelRef.current.send({
         type: 'broadcast',
         event: 'message',
         payload: newMessage
       });
+
+      // Periodically cleanup old messages (every 10th message)
+      if (Math.random() < 0.1) {
+        cleanupOldMessages();
+      }
     }
-  }, [userId, userType, isConnected]);
+  }, [userId, userType, isConnected, saveMessageToDatabase, cleanupOldMessages]);
 
   const startTyping = useCallback(() => {
     if (!channelRef.current || !isConnected) return;
@@ -181,6 +277,7 @@ export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabas
     typingUsers,
     isConnected,
     error,
+    isLoadingHistory,
     sendMessage,
     startTyping,
     stopTyping

@@ -28,6 +28,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     typingUsers,
     isConnected,
     error,
+    isLoadingHistory,
     sendMessage,
     startTyping,
     stopTyping
@@ -102,6 +103,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                   currentUserId={userId}
                   typingUsers={typingUsers}
                   messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
+                  isLoadingHistory={isLoadingHistory}
                 />
 
                 <ChatInput

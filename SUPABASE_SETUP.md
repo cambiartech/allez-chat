@@ -1,90 +1,103 @@
-# Supabase Chat Setup Guide
+# Supabase Setup Guide for Allez Chat
 
-## Why Supabase?
+## 1. Create Supabase Account & Project
 
-Netlify Functions don't support WebSocket connections because they're serverless. Supabase provides real-time subscriptions that work perfectly for chat applications.
-
-## Quick Setup (5 minutes)
-
-### 1. Create a Supabase Account
 1. Go to [supabase.com](https://supabase.com)
-2. Sign up for free
+2. Sign up/login
 3. Create a new project
+4. Wait for project to be ready
 
-### 2. Get Your Credentials
-1. In your Supabase dashboard, go to Settings > API
-2. Copy your:
-   - Project URL (looks like: `https://your-project.supabase.co`)
-   - Anon/Public Key (starts with `eyJ...`)
+## 2. Get Your Credentials
 
-### 3. Add Environment Variables
+From your Supabase dashboard:
+- **Project URL**: Found in Settings > API > Project URL
+- **Anon Key**: Found in Settings > API > Project API keys > anon/public
 
-Create a `.env` file in the `client` directory:
+## 3. Create Database Tables
 
-```bash
-REACT_APP_SUPABASE_URL=https://your-project.supabase.co
+Go to **SQL Editor** in your Supabase dashboard and run this SQL:
+
+```sql
+-- Create messages table for chat persistence
+CREATE TABLE chat_messages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  trip_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  user_type TEXT NOT NULL CHECK (user_type IN ('driver', 'rider', 'admin')),
+  message TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create index for faster queries
+CREATE INDEX idx_chat_messages_trip_created ON chat_messages(trip_id, created_at DESC);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+
+-- Create policy to allow all operations (you can make this more restrictive)
+CREATE POLICY "Allow all operations on chat_messages" ON chat_messages
+FOR ALL USING (true) WITH CHECK (true);
+
+-- Function to auto-delete messages older than 2 hours
+CREATE OR REPLACE FUNCTION delete_old_messages()
+RETURNS void AS $$
+BEGIN
+  DELETE FROM chat_messages 
+  WHERE created_at < NOW() - INTERVAL '2 hours';
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create a scheduled job to run cleanup every hour
+-- Note: This requires the pg_cron extension (available in Supabase Pro)
+-- For free tier, you can call this function manually or from your app
+```
+
+## 4. Environment Variables
+
+Create/update your `.env` file in the `client` directory:
+
+```env
+REACT_APP_SUPABASE_URL=your-project-url-here
 REACT_APP_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
-### 4. Add to Netlify Environment Variables
+## 5. Test Connection
 
-In your Netlify dashboard:
-1. Go to Site settings > Environment variables
-2. Add:
-   - `REACT_APP_SUPABASE_URL`: Your project URL
-   - `REACT_APP_SUPABASE_ANON_KEY`: Your anon key
-
-### 5. Optional: Create Messages Table (for persistence)
-
-If you want to store messages permanently:
-
-```sql
--- Create messages table
-CREATE TABLE messages (
-  id BIGSERIAL PRIMARY KEY,
-  trip_id TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  user_type TEXT NOT NULL,
-  message TEXT NOT NULL,
-  timestamp TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Enable real-time
-ALTER PUBLICATION supabase_realtime ADD TABLE messages;
-
--- Add RLS (Row Level Security)
-ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
-
--- Allow all operations for now (you can make this more restrictive)
-CREATE POLICY "Allow all operations" ON messages FOR ALL USING (true);
+Start your development server:
+```bash
+cd client
+npm start
 ```
 
-## How It Works
+Visit: `http://localhost:3000/chat?tripId=12345&userId=test_user&userType=admin`
 
-1. **Real-time Channels**: Each trip gets its own channel (`trip-{tripId}`)
-2. **Broadcast Messages**: Messages are broadcast to all users in the channel
-3. **Presence Tracking**: See who's online
-4. **Typing Indicators**: Real-time typing status
+## Features
 
-## Testing
+✅ **Real-time messaging** - Messages appear instantly  
+✅ **Message persistence** - Messages saved to database  
+✅ **Message history** - Load previous messages when joining  
+✅ **Auto-cleanup** - Messages deleted after 2 hours  
+✅ **Typing indicators** - See when someone is typing  
+✅ **Presence tracking** - Know who's online  
 
-1. Open multiple browser tabs with the same trip ID
-2. Send messages - they should appear instantly in all tabs
-3. Start typing - other users should see typing indicators
+## Database Schema
 
-## Benefits vs Socket.IO
+### chat_messages table:
+- `id` (UUID) - Primary key
+- `trip_id` (TEXT) - Trip identifier
+- `user_id` (TEXT) - User identifier  
+- `user_type` (TEXT) - 'driver', 'rider', or 'admin'
+- `message` (TEXT) - Message content
+- `created_at` (TIMESTAMP) - When message was sent
 
-✅ **No server management**  
-✅ **Built-in scaling**  
-✅ **Free tier with generous limits**  
-✅ **Works with Netlify**  
-✅ **Real-time subscriptions**  
-✅ **Presence tracking**  
-✅ **Optional message persistence**
+## Cleanup Strategy
 
-## Next Steps
+Messages are automatically deleted after 2 hours to:
+- Save database storage space
+- Keep costs low on free tier
+- Maintain chat performance
 
-- Add message persistence with the SQL table above
-- Implement user authentication
-- Add file sharing capabilities
-- Set up proper Row Level Security (RLS) policies 
+For production, you might want to:
+- Increase retention to 24 hours
+- Archive important messages
+- Implement user-specific retention policies 
