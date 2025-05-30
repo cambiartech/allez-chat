@@ -2,15 +2,20 @@ import React from 'react';
 import styled from '@emotion/styled';
 import ChatWidget from './ChatWidget';
 
-// This component will be rendered in a standalone HTML page
-const WebViewChat: React.FC = () => {
-  // Get parameters from URL query string
-  const params = new URLSearchParams(window.location.search);
-  const tripId = params.get('tripId') || '';
-  const userId = params.get('userId') || '';
-  const userType = params.get('userType') as 'driver' | 'rider' | 'admin';
-  const serverUrl = params.get('serverUrl') || 'http://localhost:5001';
+interface WebViewChatProps {
+  tripId: string;
+  userId: string;
+  userType: 'driver' | 'rider' | 'admin';
+  serverUrl: string;
+}
 
+// This component will be rendered in a standalone HTML page
+const WebViewChat: React.FC<WebViewChatProps> = ({
+  tripId,
+  userId,
+  userType,
+  serverUrl
+}) => {
   return (
     <Container>
       <ChatWidget
@@ -18,14 +23,15 @@ const WebViewChat: React.FC = () => {
         userId={userId}
         userType={userType}
         serverUrl={serverUrl}
+        initiallyOpen={true}
       />
     </Container>
   );
 };
 
 const Container = styled.div`
+  width: 100%;
   height: 100vh;
-  width: 100vw;
   display: flex;
   flex-direction: column;
   background: white;

@@ -12,13 +12,15 @@ interface ChatWidgetProps {
   userId: string;
   userType: 'driver' | 'rider' | 'admin';
   initiallyOpen?: boolean;
+  serverUrl?: string;
 }
 
 const ChatWidget: React.FC<ChatWidgetProps> = ({
   tripId,
   userId,
   userType,
-  initiallyOpen = false
+  initiallyOpen = false,
+  serverUrl
 }) => {
   const {
     messages,
@@ -27,7 +29,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     sendMessage,
     startTyping,
     stopTyping
-  } = useChat({ tripId, userId, userType });
+  } = useChat({ tripId, userId, userType, serverUrl });
 
   const [isOpen, setIsOpen] = useState(initiallyOpen);
   const [inputMessage, setInputMessage] = useState('');

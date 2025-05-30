@@ -12,17 +12,18 @@ interface UseChatProps {
   tripId: string;
   userId: string;
   userType: 'driver' | 'rider' | 'admin';
+  serverUrl?: string;
 }
 
-export const useChat = ({ tripId, userId, userType }: UseChatProps) => {
+export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    // Initialize socket connection using config URL
-    const socket = io(config.SOCKET_URL);
+    // Initialize socket connection using provided URL or config default
+    const socket = io(serverUrl || config.SOCKET_URL);
     socketRef.current = socket;
 
     // Connect to chat room
@@ -50,7 +51,7 @@ export const useChat = ({ tripId, userId, userType }: UseChatProps) => {
     return () => {
       socket.disconnect();
     };
-  }, [tripId, userId, userType]);
+  }, [tripId, userId, userType, serverUrl]);
 
   const sendMessage = useCallback((message: string | Message[]) => {
     if (Array.isArray(message)) {
