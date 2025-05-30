@@ -1,0 +1,35 @@
+[build]
+  command = "npm run build"
+  publish = "client/build"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["mongodb"]
+
+# Handle client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+  conditions = {Role = ["admin", "user"]}
+
+# Handle API routes
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[dev]
+  framework = "#custom"
+  command = "npm run dev"
+  targetPort = 3000
+  port = 8888
+  publish = "client/build"
+
+[context.production.environment]
+  REACT_APP_ENV = "production"
+
+[context.staging.environment]
+  REACT_APP_ENV = "staging" 

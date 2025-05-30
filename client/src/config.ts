@@ -1,16 +1,16 @@
 // Server URLs for different environments
 const config = {
   development: {
-    SERVER_URL: 'http://localhost:5001',
-    SOCKET_URL: 'ws://localhost:5001'
+    SERVER_URL: '/.netlify/functions/chat',
+    SOCKET_URL: 'ws://localhost:8888/.netlify/functions/chat'
   },
   staging: {
-    SERVER_URL: process.env.REACT_APP_SERVER_URL || 'https://staging-chat.allez.com',
-    SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'wss://staging-chat.allez.com'
+    SERVER_URL: '/.netlify/functions/chat',
+    SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'wss://staging-allez-chat.netlify.app/.netlify/functions/chat'
   },
   production: {
-    SERVER_URL: process.env.REACT_APP_SERVER_URL || 'https://chat.allez.com',
-    SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'wss://chat.allez.com'
+    SERVER_URL: '/.netlify/functions/chat',
+    SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'wss://allez-chat.netlify.app/.netlify/functions/chat'
   }
 };
 

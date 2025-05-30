@@ -1,23 +1,21 @@
 {
     "name": "allez-chat",
     "version": "1.0.0",
-    "description": "Real-time chat widget for taxi app",
+    "description": "Real-time chat widget for Allez taxi app",
     "scripts": {
-        "start": "concurrently \"npm run server\" \"npm run client\"",
-        "server": "nodemon server/index.js",
-        "client": "cd client && npm start",
-        "install-all": "npm install && cd client && npm install"
+        "dev": "netlify dev",
+        "build": "cd client && npm run build",
+        "start": "netlify dev",
+        "install:all": "npm install && cd client && npm install"
     },
     "dependencies": {
-        "cors": "^2.8.5",
-        "dotenv": "^16.5.0",
-        "express": "^4.18.2",
-        "jsonwebtoken": "^9.0.2",
-        "mongoose": "^8.15.1",
-        "socket.io": "^4.7.2"
+        "@netlify/functions": "^2.0.0",
+        "mongodb": "^6.0.0",
+        "socket.io": "^4.7.0",
+        "typescript": "^5.0.0"
     },
     "devDependencies": {
-        "concurrently": "^8.2.2",
-        "nodemon": "^3.0.2"
+        "@types/node": "^20.0.0",
+        "netlify-cli": "^17.0.0"
     }
 }
