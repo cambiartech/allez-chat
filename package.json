@@ -6,8 +6,8 @@
         "dev": "netlify dev",
         "build": "npm run install-client && cd client && npm run build",
         "start": "netlify dev",
-        "install:all": "npm install && cd client && npm install",
-        "install-client": "cd client && npm install"
+        "install:all": "npm install && cd client && npm install --legacy-peer-deps",
+        "install-client": "cd client && npm install --legacy-peer-deps"
     },
     "dependencies": {
         "@netlify/functions": "^2.0.0",
