@@ -1,12 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-
-interface Message {
-  userId: string;
-  userType: string;
-  message: string;
-  timestamp: string;
-}
+import { Message, User, TypingUser } from '../../types/chat';
 
 interface ChatUser {
   userId: string;
@@ -16,13 +10,13 @@ interface ChatUser {
 interface UseChatProps {
   tripId: string;
   userId: string;
-  userType: string;
+  userType: 'driver' | 'rider' | 'admin';
   serverUrl: string;
 }
 
 export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [typingUsers, setTypingUsers] = useState<ChatUser[]>([]);
+  const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -78,40 +72,29 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
     };
   }, [tripId, userId, userType, serverUrl]);
 
-  const sendMessage = useCallback((message: string) => {
-    if (socketRef.current) {
-      socketRef.current.emit('send_message', {
-        tripId,
-        message,
+  const sendMessage = useCallback((message: string | Message[]) => {
+    if (Array.isArray(message)) {
+      setMessages(prevMessages => [...prevMessages, ...message]);
+    } else {
+      const newMessage: Message = {
+        userId,
         userType,
-        userId
-      });
+        message,
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prevMessages => [...prevMessages, newMessage]);
     }
-  }, [tripId, userId, userType]);
+  }, [userId, userType]);
 
-  const startTyping = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.emit('typing', { tripId, isTyping: true });
-      
-      // Clear existing timeout
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-
-      // Set new timeout
-      typingTimeoutRef.current = setTimeout(() => {
-        if (socketRef.current) {
-          socketRef.current.emit('typing', { tripId, isTyping: false });
-        }
-      }, 1000);
+  const startTyping = useCallback((users?: TypingUser[]) => {
+    if (users) {
+      setTypingUsers(users);
     }
-  }, [tripId]);
+  }, []);
 
   const stopTyping = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.emit('typing', { tripId, isTyping: false });
-    }
-  }, [tripId]);
+    setTypingUsers([]);
+  }, []);
 
   return {
     messages,

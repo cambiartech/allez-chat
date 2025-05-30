@@ -1,19 +1,12 @@
-import React from 'react';
+import React, { RefObject } from 'react';
 import styled from '@emotion/styled';
-import { motion } from 'framer-motion';
-
-interface Message {
-  userId: string;
-  userType: string;
-  message: string;
-  timestamp: string;
-}
+import { Message, TypingUser } from '../../types/chat';
 
 interface MessageListProps {
   messages: Message[];
   currentUserId: string;
-  typingUsers: { userId: string; userType: string }[];
-  messagesEndRef: React.RefObject<HTMLDivElement>;
+  typingUsers: TypingUser[];
+  messagesEndRef: RefObject<HTMLDivElement>;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -24,61 +17,53 @@ export const MessageList: React.FC<MessageListProps> = ({
 }) => {
   return (
     <Container>
-      {messages.map((msg, index) => (
-        <MessageBubble
-          key={index}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          isOwn={msg.userId === currentUserId}
-        >
-          <UserType>{msg.userType}</UserType>
-          <MessageText>{msg.message}</MessageText>
-          <TimeStamp>
-            {new Date(msg.timestamp).toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}
-          </TimeStamp>
-        </MessageBubble>
-      ))}
-      
-      {typingUsers.length > 0 && (
-        <TypingIndicator>
-          {typingUsers.map(user => user.userType).join(', ')} 
-          {typingUsers.length === 1 ? ' is' : ' are'} typing...
-        </TypingIndicator>
-      )}
-      
-      <div ref={messagesEndRef} />
+      <MessagesWrapper>
+        {messages.map((msg, index) => (
+          <MessageBubble
+            key={`${msg.timestamp}-${index}`}
+            isOwn={msg.userId === currentUserId}
+          >
+            <MessageText>{msg.message}</MessageText>
+            <MessageTime>
+              {new Date(msg.timestamp).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </MessageTime>
+          </MessageBubble>
+        ))}
+        {typingUsers.length > 0 && (
+          <TypingIndicator>
+            {typingUsers.map(user => user.userId).join(', ')} is typing...
+          </TypingIndicator>
+        )}
+        <div ref={messagesEndRef} />
+      </MessagesWrapper>
     </Container>
   );
 };
 
 const Container = styled.div`
   flex: 1;
-  padding: 15px;
   overflow-y: auto;
-  background-color: #F5F5F5;
+  padding: 20px;
+  background-color: #f5f5f5;
+`;
+
+const MessagesWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 `;
 
-const MessageBubble = styled(motion.div)<{ isOwn: boolean }>`
-  max-width: 80%;
+const MessageBubble = styled.div<{ isOwn: boolean }>`
+  max-width: 70%;
   padding: 10px 15px;
   border-radius: 15px;
-  background-color: ${props => props.isOwn ? '#007AFF' : '#E9ECEF'};
-  color: ${props => props.isOwn ? 'white' : 'black'};
-  align-self: ${props => props.isOwn ? 'flex-end' : 'flex-start'};
-  position: relative;
-`;
-
-const UserType = styled.span`
-  font-size: 12px;
-  opacity: 0.7;
-  display: block;
-  margin-bottom: 4px;
+  background-color: ${props => (props.isOwn ? '#007AFF' : 'white')};
+  color: ${props => (props.isOwn ? 'white' : 'black')};
+  align-self: ${props => (props.isOwn ? 'flex-end' : 'flex-start')};
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 `;
 
 const MessageText = styled.p`
@@ -87,21 +72,16 @@ const MessageText = styled.p`
   line-height: 1.4;
 `;
 
-const TimeStamp = styled.span`
-  font-size: 10px;
-  opacity: 0.7;
+const MessageTime = styled.span`
   display: block;
+  font-size: 11px;
   margin-top: 4px;
-  text-align: right;
+  opacity: 0.7;
 `;
 
 const TypingIndicator = styled.div`
   font-size: 12px;
   color: #666;
   font-style: italic;
-  padding: 5px 10px;
-  background-color: #fff;
-  border-radius: 10px;
-  align-self: flex-start;
-  margin-top: 5px;
+  padding: 5px 0;
 `; 

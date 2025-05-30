@@ -8,6 +8,7 @@ import { ChatInput } from './ChatInput';
 import { useChat } from './useChat';
 import { io, Socket } from 'socket.io-client';
 import config from '../../config';
+import { Message, User, TypingUser } from '../../types/chat';
 
 interface ChatWidgetProps {
   tripId: string;
@@ -37,7 +38,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [socket, setSocket] = useState<Socket | null>(null);
   const [inputMessage, setInputMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const handleSendMessage = useCallback(() => {
     if (inputMessage.trim()) {
@@ -67,21 +68,21 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     });
 
     newSocket.on('room_history', (data: { messages: Message[] }) => {
-      setMessages(data.messages);
+      sendMessage(data.messages);
     });
 
     newSocket.on('receive_message', (message: Message) => {
-      setMessages(prev => [...prev, message]);
+      sendMessage([message]);
     });
 
-    newSocket.on('typing_status', ({ typingUsers: users }) => {
-      setTypingUsers(users);
+    newSocket.on('typing_status', ({ typingUsers: users }: { typingUsers: TypingUser[] }) => {
+      startTyping(users);
     });
 
     return () => {
       newSocket.close();
     };
-  }, [tripId, userId, userType]);
+  }, [tripId, userId, userType, sendMessage, startTyping]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
