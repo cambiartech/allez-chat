@@ -30,6 +30,13 @@ export const MessageList: React.FC<MessageListProps> = ({
             key={`${msg.timestamp}-${index}`}
             isOwn={msg.userId === currentUserId}
           >
+            {msg.userId !== currentUserId && (
+              <UserLabel userType={msg.userType}>
+                {msg.userType === 'driver' ? '🚗 Driver' : 
+                 msg.userType === 'rider' ? '👤 Passenger' : 
+                 '👨‍💼 Admin'}
+              </UserLabel>
+            )}
             <MessageText>{msg.message}</MessageText>
             <MessageTime>
               {new Date(msg.timestamp).toLocaleTimeString([], {
@@ -67,10 +74,11 @@ const MessageBubble = styled.div<{ isOwn: boolean }>`
   max-width: 70%;
   padding: 10px 15px;
   border-radius: 15px;
-  background-color: ${props => (props.isOwn ? '#f05a29' : 'white')};
+  background-color: ${props => (props.isOwn ? '#fdcc1b' : 'white')};
   color: ${props => (props.isOwn ? 'white' : 'black')};
   align-self: ${props => (props.isOwn ? 'flex-end' : 'flex-start')};
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  border: ${props => (props.isOwn ? 'none' : '1px solid #e0e0e0')};
 `;
 
 const MessageText = styled.p`
@@ -98,4 +106,22 @@ const LoadingIndicator = styled.div`
   color: #666;
   font-style: italic;
   padding: 5px 0;
+`;
+
+const UserLabel = styled.span<{ userType: string }>`
+  font-size: 12px;
+  font-weight: bold;
+  margin-right: 5px;
+  color: ${props => {
+    switch (props.userType) {
+      case 'driver':
+        return '#007bff';
+      case 'rider':
+        return '#28a745';
+      case 'admin':
+        return '#dc3545';
+      default:
+        return 'black';
+    }
+  }};
 `; 

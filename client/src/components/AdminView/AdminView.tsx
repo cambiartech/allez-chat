@@ -57,7 +57,7 @@ const Header = styled.header`
   margin-bottom: 40px;
 
   h1 {
-    color: #f05a29;
+    color: #fdcc1b;
     margin-bottom: 10px;
   }
 
@@ -92,7 +92,7 @@ const ControlGroup = styled.div`
     transition: border-color 0.2s;
 
     &:focus {
-      border-color: #f05a29;
+      border-color: #fdcc1b;
     }
   }
 `;

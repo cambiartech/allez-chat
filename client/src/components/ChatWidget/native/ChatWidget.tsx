@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 15,
-    backgroundColor: '#f05a29',
+    backgroundColor: '#fdcc1b',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   ownMessage: {
-    backgroundColor: '#f05a29',
+    backgroundColor: '#fdcc1b',
     alignSelf: 'flex-end',
   },
   otherMessage: {
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   sendButton: {
-    backgroundColor: '#f05a29',
+    backgroundColor: '#fdcc1b',
     padding: 10,
     borderRadius: 20,
     width: 70,
