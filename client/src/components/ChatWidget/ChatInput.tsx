@@ -2,7 +2,7 @@ import React from 'react';
 import styled from '@emotion/styled';
 import { IoMdSend } from 'react-icons/io';
 
-interface ChatInputProps {
+export interface ChatInputProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSend: () => void;
@@ -11,7 +11,7 @@ interface ChatInputProps {
   disabled?: boolean;
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({
+export const ChatInput: React.FC<ChatInputProps> = ({
   value,
   onChange,
   onSend,

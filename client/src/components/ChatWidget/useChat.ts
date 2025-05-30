@@ -24,64 +24,101 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
 
   useEffect(() => {
     const socketUrl = serverUrl || config.SOCKET_URL;
-    console.log('Attempting to connect to:', socketUrl);
+    console.log('Chat initialization:', {
+      tripId,
+      userId,
+      userType,
+      socketUrl,
+      config: config,
+      env: process.env.REACT_APP_ENV
+    });
     
     // Initialize socket connection with error handling
-    const socket = io(socketUrl, {
-      transports: ['websocket'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000
-    });
-    
-    socketRef.current = socket;
+    try {
+      console.log('Attempting socket connection to:', socketUrl);
+      const socket = io(socketUrl, {
+        transports: ['websocket'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        query: {
+          tripId,
+          userId,
+          userType
+        }
+      });
+      
+      socketRef.current = socket;
 
-    // Connect to chat room
-    socket.emit('join_room', { tripId, userType, userId });
+      // Connect to chat room
+      socket.emit('join_room', { tripId, userType, userId });
+      console.log('Emitted join_room event:', { tripId, userType, userId });
 
-    // Handle connection status
-    socket.on('connect', () => {
-      console.log('Socket connected successfully');
-      setIsConnected(true);
-      setError(null);
-    });
-    
-    socket.on('connect_error', (err) => {
-      console.error('Socket connection error:', err);
-      setError(`Connection error: ${err.message}`);
-      setIsConnected(false);
-    });
+      // Handle connection status
+      socket.on('connect', () => {
+        console.log('Socket connected successfully. Socket ID:', socket.id);
+        setIsConnected(true);
+        setError(null);
+      });
+      
+      socket.on('connect_error', (err) => {
+        console.error('Socket connection error:', {
+          error: err,
+          message: err.message
+        });
+        setError(`Connection error: ${err.message}`);
+        setIsConnected(false);
+      });
 
-    socket.on('disconnect', () => {
-      console.log('Socket disconnected');
-      setIsConnected(false);
-    });
+      socket.on('disconnect', (reason) => {
+        console.log('Socket disconnected. Reason:', reason);
+        setIsConnected(false);
+      });
 
-    // Handle incoming messages
-    socket.on('receive_message', (message: Message) => {
-      console.log('Received message:', message);
-      setMessages(prev => [...prev, message]);
-    });
+      socket.on('error', (err: Error) => {
+        console.error('Socket error:', err);
+        setError(`Socket error: ${err.message}`);
+      });
 
-    // Handle room history
-    socket.on('room_history', ({ messages: history }) => {
-      console.log('Received room history:', history);
-      setMessages(history);
-    });
+      // Handle incoming messages
+      socket.on('receive_message', (message: Message) => {
+        console.log('Received message:', message);
+        setMessages(prev => [...prev, message]);
+      });
 
-    // Handle typing status
-    socket.on('typing_status', ({ typingUsers: users }) => {
-      setTypingUsers(users.filter((user: ChatUser) => user.userId !== userId));
-    });
+      // Handle room history
+      socket.on('room_history', ({ messages: history }) => {
+        console.log('Received room history:', history);
+        setMessages(history);
+      });
 
-    return () => {
-      console.log('Cleaning up socket connection');
-      socket.disconnect();
-    };
+      // Handle typing status
+      socket.on('typing_status', ({ typingUsers: users }) => {
+        const filteredUsers = users.filter((user: ChatUser) => user.userId !== userId);
+        console.log('Typing status update:', { users, filteredUsers });
+        setTypingUsers(filteredUsers);
+      });
+
+      return () => {
+        console.log('Cleaning up socket connection');
+        socket.disconnect();
+      };
+    } catch (error) {
+      const err = error as Error;
+      console.error('Error initializing socket:', err);
+      setError(`Failed to initialize chat: ${err.message}`);
+      return () => {};
+    }
   }, [tripId, userId, userType, serverUrl]);
 
   const sendMessage = useCallback((message: string | Message[]) => {
+    if (!socketRef.current?.connected) {
+      console.warn('Attempting to send message while socket is disconnected');
+      return;
+    }
+
     if (Array.isArray(message)) {
+      console.log('Adding batch messages:', message);
       setMessages(prevMessages => [...prevMessages, ...message]);
     } else {
       const newMessage: Message = {
@@ -90,25 +127,26 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
         message,
         timestamp: new Date().toISOString()
       };
+      console.log('Sending message:', newMessage);
       setMessages(prevMessages => [...prevMessages, newMessage]);
       
-      // Emit the message through socket
-      if (socketRef.current) {
-        socketRef.current.emit('send_message', newMessage);
-      }
+      socketRef.current.emit('send_message', newMessage);
     }
   }, [userId, userType]);
 
   const startTyping = useCallback((users?: TypingUser[]) => {
     if (users) {
+      console.log('Setting typing users:', users);
       setTypingUsers(users);
-    } else if (socketRef.current) {
+    } else if (socketRef.current?.connected) {
+      console.log('Emitting typing start:', { userId, userType });
       socketRef.current.emit('typing_start', { userId, userType });
     }
   }, [userId, userType]);
 
   const stopTyping = useCallback(() => {
-    if (socketRef.current) {
+    if (socketRef.current?.connected) {
+      console.log('Emitting typing stop:', { userId, userType });
       socketRef.current.emit('typing_stop', { userId, userType });
     }
     setTypingUsers([]);
