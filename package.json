@@ -17,6 +17,7 @@
     },
     "devDependencies": {
         "@types/node": "^20.0.0",
+        "@types/react-native": "^0.72.8",
         "netlify-cli": "^17.0.0"
     }
 }

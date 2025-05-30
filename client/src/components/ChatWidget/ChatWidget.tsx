@@ -6,9 +6,6 @@ import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { useChat } from './useChat';
-import { io, Socket } from 'socket.io-client';
-import config from '../../config';
-import { Message, User, TypingUser } from '../../types/chat';
 
 interface ChatWidgetProps {
   tripId: string;
@@ -35,10 +32,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   } = useChat({ tripId, userId, userType, serverUrl });
 
   const [isOpen, setIsOpen] = useState(initiallyOpen);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [inputMessage, setInputMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const handleSendMessage = useCallback(() => {
     if (inputMessage.trim()) {
@@ -53,38 +48,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   }, [startTyping]);
 
   useEffect(() => {
-    // Initialize socket connection using config URL
-    const newSocket = io(config.SOCKET_URL, {
-      transports: ['websocket'],
-      query: { tripId }
-    });
-
-    setSocket(newSocket);
-
-    // Socket event handlers
-    newSocket.on('connect', () => {
-      console.log('Connected to chat server');
-      newSocket.emit('join_room', { tripId, userId, userType });
-    });
-
-    newSocket.on('room_history', (data: { messages: Message[] }) => {
-      sendMessage(data.messages);
-    });
-
-    newSocket.on('receive_message', (message: Message) => {
-      sendMessage([message]);
-    });
-
-    newSocket.on('typing_status', ({ typingUsers: users }: { typingUsers: TypingUser[] }) => {
-      startTyping(users);
-    });
-
-    return () => {
-      newSocket.close();
-    };
-  }, [tripId, userId, userType, sendMessage, startTyping]);
-
-  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -96,7 +59,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
         >
-          <BsChatDots size={24} />
+          <BsChatDots size={24} style={{ display: 'block' }} />
         </ChatButton>
       )}
 
@@ -117,7 +80,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
               messages={messages}
               currentUserId={userId}
               typingUsers={typingUsers}
-              messagesEndRef={messagesEndRef}
+              messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
             />
 
             <ChatInput

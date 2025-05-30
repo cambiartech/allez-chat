@@ -1,6 +1,5 @@
 import React from 'react';
 import styled from '@emotion/styled';
-import { IconType } from 'react-icons';
 import { IoMdClose } from 'react-icons/io';
 
 interface ChatHeaderProps {
@@ -8,8 +7,6 @@ interface ChatHeaderProps {
   onClose: () => void;
   isConnected: boolean;
 }
-
-const CloseIcon = IoMdClose as IconType;
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({ tripId, onClose, isConnected }) => {
   return (
@@ -21,7 +18,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ tripId, onClose, isConne
         </Status>
       </div>
       <CloseButton onClick={onClose}>
-        <CloseIcon size={24} />
+        <IoMdClose size={24} />
       </CloseButton>
     </Header>
   );

@@ -1,6 +1,5 @@
 import React from 'react';
 import styled from '@emotion/styled';
-import { IconType } from 'react-icons';
 import { IoMdSend } from 'react-icons/io';
 
 interface ChatInputProps {
@@ -10,8 +9,6 @@ interface ChatInputProps {
   onKeyPress: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onBlur: () => void;
 }
-
-const SendIcon = IoMdSend as IconType;
 
 export const ChatInput: React.FC<ChatInputProps> = ({
   value,
@@ -31,7 +28,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         placeholder="Type a message..."
       />
       <SendButton onClick={onSend} disabled={!value.trim()}>
-        <SendIcon size={20} />
+        <IoMdSend size={20} />
       </SendButton>
     </Container>
   );

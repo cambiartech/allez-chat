@@ -1,5 +1,21 @@
 // Server URLs for different environments
-const config = {
+interface BaseConfig {
+  SERVER_URL: string;
+  SOCKET_URL: string;
+}
+
+interface DevelopmentConfig extends BaseConfig {
+  IOS_SERVER_URL: string;
+  IOS_SOCKET_URL: string;
+}
+
+interface Config {
+  development: DevelopmentConfig;
+  staging: BaseConfig;
+  production: BaseConfig;
+}
+
+const config: Config = {
   development: {
     SERVER_URL: 'http://10.0.2.2:5001',    // Android emulator localhost
     SOCKET_URL: 'ws://10.0.2.2:5001',      // Android emulator localhost
@@ -27,9 +43,10 @@ const getConfig = () => {
   
   // For development, use special iOS URLs if on iOS
   if (ENV === 'development' && Platform.OS === 'ios') {
+    const devConfig = envConfig as DevelopmentConfig;
     return {
-      SERVER_URL: envConfig.IOS_SERVER_URL,
-      SOCKET_URL: envConfig.IOS_SOCKET_URL
+      SERVER_URL: devConfig.IOS_SERVER_URL,
+      SOCKET_URL: devConfig.IOS_SOCKET_URL
     };
   }
   

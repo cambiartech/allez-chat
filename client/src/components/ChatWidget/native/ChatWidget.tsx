@@ -99,7 +99,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       <FlatList
         data={messages}
         renderItem={renderMessage}
-        keyExtractor={(item, index) => `${item.timestamp}-${index}`}
+        keyExtractor={(item: Message, index: number) => `${item.timestamp}-${index}`}
         style={styles.messageList}
       />
 

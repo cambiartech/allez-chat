@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Message, User, TypingUser } from '../../types/chat';
+import { Message, TypingUser } from '../../types/chat';
 
 interface ChatUser {
   userId: string;
@@ -19,7 +19,6 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
-  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     // Initialize socket connection
@@ -46,25 +45,6 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
     // Handle typing status
     socket.on('typing_status', ({ typingUsers: users }) => {
       setTypingUsers(users.filter((user: ChatUser) => user.userId !== userId));
-    });
-
-    // Handle user joined/left events
-    socket.on('user_joined', (data) => {
-      setMessages(prev => [...prev, {
-        userId: data.userId,
-        userType: data.userType,
-        message: data.message,
-        timestamp: data.timestamp
-      }]);
-    });
-
-    socket.on('user_left', (data) => {
-      setMessages(prev => [...prev, {
-        userId: data.userId,
-        userType: data.userType,
-        message: data.message,
-        timestamp: data.timestamp
-      }]);
     });
 
     return () => {
