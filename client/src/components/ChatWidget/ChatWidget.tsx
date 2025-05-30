@@ -5,7 +5,8 @@ import { BsChatDots } from 'react-icons/bs';
 import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
-import { useChat } from './useChat';
+import { useSupabaseChat } from './useSupabaseChat';
+import config from '../../config';
 
 interface ChatWidgetProps {
   tripId: string;
@@ -30,7 +31,13 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     sendMessage,
     startTyping,
     stopTyping
-  } = useChat({ tripId, userId, userType, serverUrl });
+  } = useSupabaseChat({ 
+    tripId, 
+    userId, 
+    userType, 
+    supabaseUrl: config.SUPABASE_URL,
+    supabaseKey: config.SUPABASE_ANON_KEY
+  });
 
   const [isOpen, setIsOpen] = useState(initiallyOpen);
   const [inputMessage, setInputMessage] = useState('');
