@@ -8,14 +8,16 @@ interface ChatInputProps {
   onSend: () => void;
   onKeyPress: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onBlur: () => void;
+  disabled?: boolean;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({
+const ChatInput: React.FC<ChatInputProps> = ({
   value,
   onChange,
   onSend,
   onKeyPress,
-  onBlur
+  onBlur,
+  disabled = false
 }) => {
   return (
     <Container>
@@ -26,8 +28,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         onKeyPress={onKeyPress}
         onBlur={onBlur}
         placeholder="Type a message..."
+        disabled={disabled}
       />
-      <SendButton onClick={onSend} disabled={!value.trim()}>
+      <SendButton onClick={onSend} disabled={!value.trim() || disabled}>
         <IoMdSend size={20} aria-hidden="true" />
       </SendButton>
     </Container>
@@ -35,42 +38,46 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 };
 
 const Container = styled.div`
-  padding: 15px;
-  background-color: white;
-  border-top: 1px solid #E9ECEF;
   display: flex;
-  gap: 10px;
-  align-items: center;
+  padding: 10px;
+  border-top: 1px solid #eee;
+  background: white;
 `;
 
-const Input = styled.input`
+const Input = styled.input<{ disabled?: boolean }>`
   flex: 1;
-  padding: 10px 15px;
-  border: 1px solid #E9ECEF;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
   border-radius: 20px;
+  margin-right: 8px;
   font-size: 14px;
   outline: none;
   transition: border-color 0.2s;
 
   &:focus {
-    border-color: #f05a29;
+    border-color: #007AFF;
+  }
+
+  &:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
   }
 `;
 
 const SendButton = styled.button<{ disabled: boolean }>`
-  width: 40px;
-  height: 40px;
-  border-radius: 20px;
-  background-color: ${props => props.disabled ? '#E9ECEF' : '#f05a29'};
-  border: none;
+  background: ${props => props.disabled ? '#ccc' : '#007AFF'};
   color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
-  transition: all 0.2s;
+  transition: opacity 0.2s;
 
   &:hover:not(:disabled) {
-    background-color: #0056b3;
+    opacity: 0.9;
   }
 `; 

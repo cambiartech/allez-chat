@@ -26,6 +26,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     messages,
     typingUsers,
     isConnected,
+    error,
     sendMessage,
     startTyping,
     stopTyping
@@ -80,22 +81,34 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
               isConnected={isConnected}
             />
 
-            <MessageList
-              messages={messages}
-              currentUserId={userId}
-              typingUsers={typingUsers}
-              messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
-            />
+            {error ? (
+              <ErrorMessage>
+                {error}
+                <RetryButton onClick={() => window.location.reload()}>
+                  Retry Connection
+                </RetryButton>
+              </ErrorMessage>
+            ) : (
+              <>
+                <MessageList
+                  messages={messages}
+                  currentUserId={userId}
+                  typingUsers={typingUsers}
+                  messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
+                />
 
-            <ChatInput
-              value={inputMessage}
-              onChange={handleInputChange}
-              onSend={handleSendMessage}
-              onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                if (e.key === 'Enter') handleSendMessage();
-              }}
-              onBlur={stopTyping}
-            />
+                <ChatInput
+                  value={inputMessage}
+                  onChange={handleInputChange}
+                  onSend={handleSendMessage}
+                  onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (e.key === 'Enter') handleSendMessage();
+                  }}
+                  onBlur={stopTyping}
+                  disabled={!isConnected}
+                />
+              </>
+            )}
           </ChatContainer>
         )}
       </AnimatePresence>
@@ -134,6 +147,34 @@ const ChatContainer = styled(motion.div)<{ $isAppView: boolean }>`
   flex-direction: column;
   overflow: hidden;
   z-index: 1000;
+`;
+
+const ErrorMessage = styled.div`
+  padding: 20px;
+  margin: 20px;
+  background-color: #fff3f3;
+  border: 1px solid #ffcdd2;
+  border-radius: 8px;
+  color: #d32f2f;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const RetryButton = styled.button`
+  padding: 8px 16px;
+  background-color: #d32f2f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.9;
+  }
 `;
 
 export default ChatWidget; 
