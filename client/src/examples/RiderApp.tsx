@@ -116,7 +116,7 @@ const DriverInfo = styled.div`
 `;
 
 const ChatButton = styled.button`
-  background-color: #fdcc1b;
+  background-color: #ff8f00;
   color: white;
   border: none;
   padding: 12px 20px;

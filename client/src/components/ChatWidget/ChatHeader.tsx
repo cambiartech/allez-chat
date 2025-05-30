@@ -26,7 +26,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ tripId, onClose, isConne
 
 const Header = styled.div`
   padding: 15px;
-  background-color: #fdcc1b;
+  background-color: #ff8f00;
   color: white;
   display: flex;
   justify-content: space-between;

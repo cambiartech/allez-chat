@@ -58,13 +58,6 @@ export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabas
       channel.on('broadcast', { event: 'message' }, (payload) => {
         console.log('Received message:', payload);
         const message = payload.payload as Message;
-        
-        // Don't add our own messages again (we already added them optimistically)
-        if (message.userId === userId) {
-          console.log('Skipping own message from broadcast');
-          return;
-        }
-        
         setMessages(prev => [...prev, message]);
       });
 
@@ -240,16 +233,10 @@ export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabas
       
       console.log('Sending message:', newMessage);
       
-      // OPTIMISTIC UPDATE: Show message immediately in UI
-      setMessages(prev => [...prev, newMessage]);
+      // Save to database first (for persistence)
+      await saveMessageToDatabase(newMessage);
       
-      // Save to database in background (don't wait)
-      saveMessageToDatabase(newMessage).catch(error => {
-        console.error('Failed to save message to database:', error);
-        // Could add retry logic or show error indicator here
-      });
-      
-      // Broadcast the message to all subscribers (for real-time)
+      // Then broadcast the message to all subscribers (for real-time)
       channelRef.current.send({
         type: 'broadcast',
         event: 'message',
