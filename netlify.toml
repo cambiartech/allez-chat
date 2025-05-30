@@ -12,6 +12,16 @@
   external_node_modules = ["mongodb"]
   node_bundler = "esbuild"
 
+# WebSocket support
+[[redirects]]
+  from = "/socket.io/*"
+  to = "/.netlify/functions/chat"
+  status = 200
+  force = true
+  [redirects.headers]
+    Connection = "Upgrade"
+    Upgrade = "websocket"
+
 # Handle client-side routing
 [[redirects]]
   from = "/*"

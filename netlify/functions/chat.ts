@@ -1,7 +1,8 @@
-import { Handler } from '@netlify/functions';
+import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { MongoClient } from 'mongodb';
+import { IncomingMessage, ServerResponse } from 'http';
 
 // MongoDB setup
 const MONGODB_URI = process.env.MONGODB_URI || '';
@@ -49,7 +50,7 @@ const io = new Server(httpServer, {
     credentials: true
   },
   transports: ['websocket'],
-  path: '/socket.io'  // Use default Socket.IO path
+  path: '/socket.io'
 });
 
 // Chat room management
@@ -207,29 +208,30 @@ httpServer.listen(port, () => {
 });
 
 // Netlify Function handler
-export const handler: Handler = async (event, context) => {
+export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
   // Handle WebSocket upgrade
   if (event.httpMethod === 'GET') {
     if (event.headers.upgrade?.toLowerCase() === 'websocket') {
-      const response = await new Promise((resolve) => {
-        httpServer.on('upgrade', (req, socket, head) => {
-          io.engine.handleUpgrade(req, socket, head);
-          resolve({
-            statusCode: 101,
-            body: ''
-          });
-        });
-      });
-      return response;
+      const wsKey = event.headers['sec-websocket-key'];
+      // Create a custom response for WebSocket upgrade
+      return {
+        statusCode: 101,
+        headers: {
+          'upgrade': 'websocket',
+          'connection': 'Upgrade',
+          'sec-websocket-accept': wsKey || ''
+        },
+        body: ''
+      };
     }
 
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': process.env.CORS_ORIGIN || '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
+        'content-type': 'application/json',
+        'access-control-allow-origin': process.env.CORS_ORIGIN || '*',
+        'access-control-allow-methods': 'GET, POST, OPTIONS',
+        'access-control-allow-headers': 'Content-Type'
       },
       body: JSON.stringify({ 
         message: 'WebSocket server is running',

@@ -36,7 +36,7 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
     // Initialize socket connection with error handling
     try {
       const socket = io(socketUrl, {
-        path: '/socket.io',  // Use default Socket.IO path
+        path: '/socket.io',
         transports: ['websocket'],
         reconnection: true,
         reconnectionAttempts: 5,
@@ -47,14 +47,25 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
           userType
         },
         forceNew: true,
-        autoConnect: false  // Don't connect automatically
+        autoConnect: false,
+        timeout: 10000
+      });
+
+      // Add debug logging
+      socket.io.on("packet", (packet) => {
+        console.log("Socket.IO packet:", packet);
+      });
+
+      socket.io.on("error", (error) => {
+        console.error("Socket.IO transport error:", error);
       });
 
       // Add connection event listeners before connecting
       socket.on('connect_error', (err) => {
         console.error('Socket connection error:', {
           error: err,
-          message: err.message
+          message: err.message,
+          stack: err.stack
         });
         setError(`Connection error: ${err.message}`);
         setIsConnected(false);
