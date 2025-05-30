@@ -37,6 +37,7 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
     try {
       console.log('Attempting socket connection to:', socketUrl);
       const socket = io(socketUrl, {
+        path: '/.netlify/functions/chat',
         transports: ['websocket'],
         reconnection: true,
         reconnectionAttempts: 5,
@@ -45,7 +46,8 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
           tripId,
           userId,
           userType
-        }
+        },
+        forceNew: true
       });
       
       socketRef.current = socket;
