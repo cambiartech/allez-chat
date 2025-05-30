@@ -2,15 +2,15 @@
 const config = {
   development: {
     SERVER_URL: '/.netlify/functions/chat',
-    SOCKET_URL: 'wss://allez-chat.netlify.app/.netlify/functions/chat'
+    SOCKET_URL: 'wss://allez-chat.netlify.app'  // Base URL only, path will be added by Socket.IO
   },
   staging: {
     SERVER_URL: '/.netlify/functions/chat',
-    SOCKET_URL: 'wss://allez-chat.netlify.app/.netlify/functions/chat'
+    SOCKET_URL: 'wss://allez-chat.netlify.app'
   },
   production: {
     SERVER_URL: '/.netlify/functions/chat',
-    SOCKET_URL: 'wss://allez-chat.netlify.app/.netlify/functions/chat'
+    SOCKET_URL: 'wss://allez-chat.netlify.app'
   }
 };
 

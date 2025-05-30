@@ -43,14 +43,13 @@ async function setupMessagesTTL() {
 // Initialize Socket.IO server
 const httpServer = createServer();
 const io = new Server(httpServer, {
-  path: '/.netlify/functions/chat',
   cors: {
     origin: process.env.CORS_ORIGIN || '*',
     methods: ['GET', 'POST'],
     credentials: true
   },
   transports: ['websocket'],
-  allowEIO3: true
+  path: '/socket.io'  // Use default Socket.IO path
 });
 
 // Chat room management
@@ -209,8 +208,21 @@ httpServer.listen(port, () => {
 
 // Netlify Function handler
 export const handler: Handler = async (event, context) => {
+  // Handle WebSocket upgrade
   if (event.httpMethod === 'GET') {
-    // Handle WebSocket upgrade
+    if (event.headers.upgrade?.toLowerCase() === 'websocket') {
+      const response = await new Promise((resolve) => {
+        httpServer.on('upgrade', (req, socket, head) => {
+          io.engine.handleUpgrade(req, socket, head);
+          resolve({
+            statusCode: 101,
+            body: ''
+          });
+        });
+      });
+      return response;
+    }
+
     return {
       statusCode: 200,
       headers: {

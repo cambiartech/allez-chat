@@ -35,9 +35,8 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
     
     // Initialize socket connection with error handling
     try {
-      console.log('Attempting socket connection to:', socketUrl);
       const socket = io(socketUrl, {
-        path: '/.netlify/functions/chat',
+        path: '/socket.io',  // Use default Socket.IO path
         transports: ['websocket'],
         reconnection: true,
         reconnectionAttempts: 5,
@@ -47,22 +46,11 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
           userId,
           userType
         },
-        forceNew: true
+        forceNew: true,
+        autoConnect: false  // Don't connect automatically
       });
-      
-      socketRef.current = socket;
 
-      // Connect to chat room
-      socket.emit('join_room', { tripId, userType, userId });
-      console.log('Emitted join_room event:', { tripId, userType, userId });
-
-      // Handle connection status
-      socket.on('connect', () => {
-        console.log('Socket connected successfully. Socket ID:', socket.id);
-        setIsConnected(true);
-        setError(null);
-      });
-      
+      // Add connection event listeners before connecting
       socket.on('connect_error', (err) => {
         console.error('Socket connection error:', {
           error: err,
@@ -72,15 +60,22 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
         setIsConnected(false);
       });
 
+      socket.on('connect', () => {
+        console.log('Socket connected successfully. Socket ID:', socket.id);
+        setIsConnected(true);
+        setError(null);
+      });
+
       socket.on('disconnect', (reason) => {
         console.log('Socket disconnected. Reason:', reason);
         setIsConnected(false);
       });
 
-      socket.on('error', (err: Error) => {
-        console.error('Socket error:', err);
-        setError(`Socket error: ${err.message}`);
-      });
+      // Now connect
+      console.log('Attempting socket connection to:', socketUrl);
+      socket.connect();
+      
+      socketRef.current = socket;
 
       // Handle incoming messages
       socket.on('receive_message', (message: Message) => {
