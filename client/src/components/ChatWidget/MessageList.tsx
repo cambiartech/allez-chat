@@ -5,6 +5,7 @@ import { Message, TypingUser } from '../../types/chat';
 interface MessageListProps {
   messages: Message[];
   currentUserId: string;
+  currentUserType: 'driver' | 'rider' | 'admin';
   typingUsers: TypingUser[];
   messagesEndRef: RefObject<HTMLDivElement>;
   isLoadingHistory?: boolean;
@@ -13,6 +14,7 @@ interface MessageListProps {
 export const MessageList: React.FC<MessageListProps> = ({
   messages,
   currentUserId,
+  currentUserType,
   typingUsers,
   messagesEndRef,
   isLoadingHistory = false
@@ -25,27 +27,32 @@ export const MessageList: React.FC<MessageListProps> = ({
             Loading message history...
           </LoadingIndicator>
         )}
-        {messages.map((msg, index) => (
-          <MessageBubble
-            key={`${msg.timestamp}-${index}`}
-            isOwn={msg.userId === currentUserId}
-          >
-            {msg.userId !== currentUserId && (
-              <UserLabel userType={msg.userType}>
-                {msg.userType === 'driver' ? '🚗 Driver' : 
-                 msg.userType === 'rider' ? '👤 Passenger' : 
-                 '👨‍💼 Admin'}
-              </UserLabel>
-            )}
-            <MessageText>{msg.message}</MessageText>
-            <MessageTime>
-              {new Date(msg.timestamp).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </MessageTime>
-          </MessageBubble>
-        ))}
+        {messages.map((msg, index) => {
+          // A message is "own" if it's from the current user (same userId AND userType)
+          const isOwnMessage = msg.userId === currentUserId && msg.userType === currentUserType;
+          
+          return (
+            <MessageBubble
+              key={`${msg.timestamp}-${index}`}
+              isOwn={isOwnMessage}
+            >
+              {!isOwnMessage && (
+                <UserLabel userType={msg.userType}>
+                  {msg.userType === 'driver' ? '🚗 Driver' : 
+                   msg.userType === 'rider' ? '👤 Passenger' : 
+                   '👨‍💼 Admin'}
+                </UserLabel>
+              )}
+              <MessageText>{msg.message}</MessageText>
+              <MessageTime>
+                {new Date(msg.timestamp).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </MessageTime>
+            </MessageBubble>
+          );
+        })}
         {typingUsers.length > 0 && (
           <TypingIndicator>
             {typingUsers.map(user => user.userId).join(', ')} is typing...

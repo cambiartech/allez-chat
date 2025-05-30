@@ -101,6 +101,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                 <MessageList
                   messages={messages}
                   currentUserId={userId}
+                  currentUserType={userType}
                   typingUsers={typingUsers}
                   messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
                   isLoadingHistory={isLoadingHistory}
