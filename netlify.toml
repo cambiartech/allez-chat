@@ -4,12 +4,13 @@
   functions = "netlify/functions"
 
 [build.environment]
-  NODE_VERSION = "16"
+  NODE_VERSION = "18.x"
   NPM_FLAGS = "--legacy-peer-deps"
+  REACT_APP_ENV = "production"
 
 [functions]
-  node_bundler = "esbuild"
   external_node_modules = ["mongodb"]
+  node_bundler = "esbuild"
 
 # Handle client-side routing
 [[redirects]]
