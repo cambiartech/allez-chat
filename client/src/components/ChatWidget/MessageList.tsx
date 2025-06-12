@@ -19,6 +19,22 @@ export const MessageList: React.FC<MessageListProps> = ({
   messagesEndRef,
   isLoadingHistory = false
 }) => {
+  const getDisplayName = (msg: Message) => {
+    if (msg.firstName) {
+      return msg.firstName;
+    }
+    // Fallback to default labels
+    return msg.userType === 'driver' ? 'Driver' : 
+           msg.userType === 'rider' ? 'Rider' : 
+           'Admin';
+  };
+
+  const getDisplayIcon = (userType: string) => {
+    return userType === 'driver' ? '🚗' : 
+           userType === 'rider' ? '👤' : 
+           '👨‍💼';
+  };
+
   return (
     <Container>
       <MessagesWrapper>
@@ -38,9 +54,7 @@ export const MessageList: React.FC<MessageListProps> = ({
             >
               {!isOwnMessage && (
                 <UserLabel userType={msg.userType}>
-                  {msg.userType === 'driver' ? '🚗 Driver' : 
-                   msg.userType === 'rider' ? '👤 Passenger' : 
-                   '👨‍💼 Admin'}
+                  {getDisplayIcon(msg.userType)} {getDisplayName(msg)}
                 </UserLabel>
               )}
               <MessageText>{msg.message}</MessageText>
@@ -55,7 +69,7 @@ export const MessageList: React.FC<MessageListProps> = ({
         })}
         {typingUsers.length > 0 && (
           <TypingIndicator>
-            {typingUsers.map(user => user.userId).join(', ')} is typing...
+            {typingUsers.map(user => user.firstName || user.userId).join(', ')} is typing...
           </TypingIndicator>
         )}
         <div ref={messagesEndRef} />
@@ -108,13 +122,6 @@ const TypingIndicator = styled.div`
   padding: 5px 0;
 `;
 
-const LoadingIndicator = styled.div`
-  font-size: 12px;
-  color: #666;
-  font-style: italic;
-  padding: 5px 0;
-`;
-
 const UserLabel = styled.span<{ userType: string }>`
   font-size: 12px;
   font-weight: bold;
@@ -131,4 +138,11 @@ const UserLabel = styled.span<{ userType: string }>`
         return 'black';
     }
   }};
+`;
+
+const LoadingIndicator = styled.div`
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+  padding: 5px 0;
 `; 

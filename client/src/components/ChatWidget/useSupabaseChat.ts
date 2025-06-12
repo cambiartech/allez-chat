@@ -6,6 +6,7 @@ interface UseChatProps {
   tripId: string;
   userId: string;
   userType: 'driver' | 'rider' | 'admin';
+  firstName?: string;
   supabaseUrl?: string;
   supabaseKey?: string;
 }
@@ -15,11 +16,12 @@ interface DatabaseMessage {
   trip_id: string;
   user_id: string;
   user_type: string;
+  first_name?: string;
   message: string;
   created_at: string;
 }
 
-export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabaseKey }: UseChatProps) => {
+export const useSupabaseChat = ({ tripId, userId, userType, firstName, supabaseUrl, supabaseKey }: UseChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -27,6 +29,50 @@ export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabas
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const supabaseRef = useRef<SupabaseClient | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+
+  const loadMessageHistory = useCallback(async () => {
+    if (!supabaseRef.current) return;
+    
+    setIsLoadingHistory(true);
+    console.log('Loading message history for trip:', tripId);
+    
+    try {
+      const { data, error } = await supabaseRef.current
+        .from('chat_messages')
+        .select('*')
+        .eq('trip_id', tripId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading message history:', error);
+        // Don't set error state for missing table - it's optional
+        if (!error.message.includes('relation "chat_messages" does not exist')) {
+          setError(`Failed to load message history: ${error.message}`);
+        }
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // Sort messages by timestamp to ensure proper chronological order
+        const sortedData = data.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        
+        const historyMessages: Message[] = sortedData.map((dbMsg: DatabaseMessage) => ({
+          userId: dbMsg.user_id,
+          userType: dbMsg.user_type as 'driver' | 'rider' | 'admin',
+          firstName: dbMsg.first_name,
+          message: dbMsg.message,
+          timestamp: dbMsg.created_at
+        }));
+        
+        console.log(`Loaded ${historyMessages.length} messages from history`);
+        setMessages(historyMessages);
+      }
+    } catch (error) {
+      console.error('Error loading message history:', error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, [tripId]);
 
   useEffect(() => {
     // Use provided credentials or default to demo credentials
@@ -37,6 +83,7 @@ export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabas
       tripId,
       userId,
       userType,
+      firstName,
       url: url.substring(0, 20) + '...'
     });
 
@@ -64,13 +111,13 @@ export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabas
       // Subscribe to typing broadcasts
       channel.on('broadcast', { event: 'typing' }, (payload) => {
         console.log('Received typing event:', payload);
-        const { userId: typingUserId, userType: typingUserType, isTyping } = payload.payload;
+        const { userId: typingUserId, userType: typingUserType, firstName: typingFirstName, isTyping } = payload.payload;
         
         setTypingUsers(prev => {
           if (isTyping) {
             // Add user to typing list if not already there
             if (!prev.find(u => u.userId === typingUserId)) {
-              return [...prev, { userId: typingUserId, userType: typingUserType }];
+              return [...prev, { userId: typingUserId, userType: typingUserType, firstName: typingFirstName }];
             }
             return prev;
           } else {
@@ -106,6 +153,7 @@ export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabas
           await channel.track({
             userId,
             userType,
+            firstName,
             online_at: new Date().toISOString(),
           });
 
@@ -127,47 +175,7 @@ export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabas
       setError(`Failed to initialize chat: ${err.message}`);
       return () => {};
     }
-  }, [tripId, userId, userType, supabaseUrl, supabaseKey]);
-
-  const loadMessageHistory = useCallback(async () => {
-    if (!supabaseRef.current) return;
-    
-    setIsLoadingHistory(true);
-    console.log('Loading message history for trip:', tripId);
-    
-    try {
-      const { data, error } = await supabaseRef.current
-        .from('chat_messages')
-        .select('*')
-        .eq('trip_id', tripId)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('Error loading message history:', error);
-        // Don't set error state for missing table - it's optional
-        if (!error.message.includes('relation "chat_messages" does not exist')) {
-          setError(`Failed to load message history: ${error.message}`);
-        }
-        return;
-      }
-
-      if (data && data.length > 0) {
-        const historyMessages: Message[] = data.map((dbMsg: DatabaseMessage) => ({
-          userId: dbMsg.user_id,
-          userType: dbMsg.user_type as 'driver' | 'rider' | 'admin',
-          message: dbMsg.message,
-          timestamp: dbMsg.created_at
-        }));
-        
-        console.log(`Loaded ${historyMessages.length} messages from history`);
-        setMessages(historyMessages);
-      }
-    } catch (error) {
-      console.error('Error loading message history:', error);
-    } finally {
-      setIsLoadingHistory(false);
-    }
-  }, [tripId]);
+  }, [tripId, userId, userType, firstName, supabaseUrl, supabaseKey, loadMessageHistory]);
 
   const saveMessageToDatabase = useCallback(async (message: Message) => {
     if (!supabaseRef.current) return;
@@ -179,6 +187,7 @@ export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabas
           trip_id: tripId,
           user_id: message.userId,
           user_type: message.userType,
+          first_name: message.firstName,
           message: message.message,
           created_at: message.timestamp
         });
@@ -227,6 +236,7 @@ export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabas
       const newMessage: Message = {
         userId,
         userType,
+        firstName,
         message,
         timestamp: new Date().toISOString()
       };
@@ -248,29 +258,29 @@ export const useSupabaseChat = ({ tripId, userId, userType, supabaseUrl, supabas
         cleanupOldMessages();
       }
     }
-  }, [userId, userType, isConnected, saveMessageToDatabase, cleanupOldMessages]);
+  }, [userId, userType, firstName, isConnected, saveMessageToDatabase, cleanupOldMessages]);
 
   const startTyping = useCallback(() => {
     if (!channelRef.current || !isConnected) return;
     
-    console.log('Broadcasting typing start:', { userId, userType });
+    console.log('Broadcasting typing start:', { userId, userType, firstName });
     channelRef.current.send({
       type: 'broadcast',
       event: 'typing',
-      payload: { userId, userType, isTyping: true }
+      payload: { userId, userType, firstName, isTyping: true }
     });
-  }, [userId, userType, isConnected]);
+  }, [userId, userType, firstName, isConnected]);
 
   const stopTyping = useCallback(() => {
     if (!channelRef.current || !isConnected) return;
     
-    console.log('Broadcasting typing stop:', { userId, userType });
+    console.log('Broadcasting typing stop:', { userId, userType, firstName });
     channelRef.current.send({
       type: 'broadcast',
       event: 'typing',
-      payload: { userId, userType, isTyping: false }
+      payload: { userId, userType, firstName, isTyping: false }
     });
-  }, [userId, userType, isConnected]);
+  }, [userId, userType, firstName, isConnected]);
 
   return {
     messages,

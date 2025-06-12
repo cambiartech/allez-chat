@@ -6,16 +6,18 @@ import config from '../../config';
 interface ChatUser {
   userId: string;
   userType: string;
+  firstName?: string;
 }
 
 interface UseChatProps {
   tripId: string;
   userId: string;
   userType: 'driver' | 'rider' | 'admin';
+  firstName?: string;
   serverUrl?: string;
 }
 
-export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) => {
+export const useChat = ({ tripId, userId, userType, firstName, serverUrl }: UseChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -28,6 +30,7 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
       tripId,
       userId,
       userType,
+      firstName,
       socketUrl,
       config: config,
       env: process.env.REACT_APP_ENV
@@ -44,7 +47,8 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
         query: {
           tripId,
           userId,
-          userType
+          userType,
+          firstName
         },
         forceNew: true,
         autoConnect: false,
@@ -75,6 +79,9 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
         console.log('Socket connected successfully. Socket ID:', socket.id);
         setIsConnected(true);
         setError(null);
+        
+        // Join the room with firstName
+        socket.emit('join_room', { tripId, userId, userType, firstName });
       });
 
       socket.on('disconnect', (reason) => {
@@ -117,7 +124,7 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
       setError(`Failed to initialize chat: ${err.message}`);
       return () => {};
     }
-  }, [tripId, userId, userType, serverUrl]);
+  }, [tripId, userId, userType, firstName, serverUrl]);
 
   const sendMessage = useCallback((message: string | Message[]) => {
     if (!socketRef.current?.connected) {
@@ -129,36 +136,34 @@ export const useChat = ({ tripId, userId, userType, serverUrl }: UseChatProps) =
       console.log('Adding batch messages:', message);
       setMessages(prevMessages => [...prevMessages, ...message]);
     } else {
-      const newMessage: Message = {
-        userId,
-        userType,
-        message,
-        timestamp: new Date().toISOString()
-      };
-      console.log('Sending message:', newMessage);
-      setMessages(prevMessages => [...prevMessages, newMessage]);
+      console.log('Sending message:', message);
       
-      socketRef.current.emit('send_message', newMessage);
+      socketRef.current.emit('send_message', { 
+        tripId, 
+        message, 
+        userType, 
+        userId,
+        firstName 
+      });
     }
-  }, [userId, userType]);
+  }, [tripId, userId, userType, firstName]);
 
   const startTyping = useCallback((users?: TypingUser[]) => {
     if (users) {
       console.log('Setting typing users:', users);
       setTypingUsers(users);
     } else if (socketRef.current?.connected) {
-      console.log('Emitting typing start:', { userId, userType });
-      socketRef.current.emit('typing_start', { userId, userType });
+      console.log('Emitting typing start:', { userId, userType, firstName });
+      socketRef.current.emit('typing', { tripId, isTyping: true });
     }
-  }, [userId, userType]);
+  }, [tripId, userId, userType, firstName]);
 
   const stopTyping = useCallback(() => {
     if (socketRef.current?.connected) {
-      console.log('Emitting typing stop:', { userId, userType });
-      socketRef.current.emit('typing_stop', { userId, userType });
+      console.log('Emitting typing stop:', { userId, userType, firstName });
+      socketRef.current.emit('typing', { tripId, isTyping: false });
     }
-    setTypingUsers([]);
-  }, [userId, userType]);
+  }, [tripId, userId, userType, firstName]);
 
   return {
     messages,

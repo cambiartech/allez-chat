@@ -18,6 +18,13 @@ const messageSchema = new mongoose.Schema({
     required: true,
     enum: ['driver', 'rider', 'admin']
   },
+  firstName: {
+    type: String,
+    default: function() {
+      return this.userType === 'driver' ? 'Driver' : 
+             this.userType === 'rider' ? 'Rider' : 'Admin';
+    }
+  },
   message: {
     type: String,
     required: true

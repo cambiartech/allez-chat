@@ -27,6 +27,7 @@ const RiderApp: React.FC = () => {
   };
 
   const riderId = 'rider-123'; // Would come from authentication
+  const riderFirstName = 'John'; // Would come from user profile
 
   return (
     <AppContainer>
@@ -56,6 +57,7 @@ const RiderApp: React.FC = () => {
                   tripId={currentTrip.id}
                   userId={riderId}
                   userType="rider"
+                  firstName={riderFirstName}
                 />
               </ChatContainer>
             )}

@@ -7,15 +7,28 @@ interface ChatScreenProps {
   userId: string;
   userType: 'driver' | 'rider' | 'admin';
   serverUrl?: string;
+  firstName?: string;
+  onMessage?: (message: any) => void;
 }
 
 const ChatScreen: React.FC<ChatScreenProps> = ({
   tripId,
   userId,
   userType,
-  serverUrl = 'https://your-chat-server.com'
+  serverUrl = 'https://your-chat-server.com',
+  firstName,
+  onMessage
 }) => {
-  const chatUrl = `${serverUrl}/chat?tripId=${tripId}&userId=${userId}&userType=${userType}`;
+  const chatUrl = `${serverUrl}/chat?tripId=${tripId}&userId=${userId}&userType=${userType}${firstName ? `&firstName=${encodeURIComponent(firstName)}` : ''}`;
+
+  const handleMessage = (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      onMessage?.(data);
+    } catch (error) {
+      console.error('Error parsing WebView message:', error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -25,13 +38,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         // Enable WebSocket connections
         originWhitelist={['*']}
         // Enable two-way communication between React Native and Web
-        onMessage={(event) => {
-          // Handle messages from web app
-          const data = JSON.parse(event.nativeEvent.data);
-          if (data.type === 'NEW_MESSAGE') {
-            // Handle new message notifications
-          }
-        }}
+        onMessage={handleMessage}
         // Inject custom JavaScript
         injectedJavaScript={`
           // Listen for mobile-specific events
