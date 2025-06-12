@@ -24,6 +24,10 @@ CREATE TABLE chat_messages (
   trip_id TEXT NOT NULL,
   user_id TEXT NOT NULL,
   user_type TEXT NOT NULL CHECK (user_type IN ('driver', 'rider', 'admin')),
+  first_name TEXT,
+  other_name TEXT,
+  driver_id TEXT,
+  rider_id TEXT,
   message TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -79,6 +83,7 @@ Visit: `http://localhost:3000/chat?tripId=12345&userId=test_user&userType=admin`
 ✅ **Auto-cleanup** - Messages deleted after 2 hours  
 ✅ **Typing indicators** - See when someone is typing  
 ✅ **Presence tracking** - Know who's online  
+✅ **Name display** - Shows actual first names instead of generic labels
 
 ## Database Schema
 
@@ -87,8 +92,27 @@ Visit: `http://localhost:3000/chat?tripId=12345&userId=test_user&userType=admin`
 - `trip_id` (TEXT) - Trip identifier
 - `user_id` (TEXT) - User identifier  
 - `user_type` (TEXT) - 'driver', 'rider', or 'admin'
+- `first_name` (TEXT) - First name of the message sender
+- `other_name` (TEXT) - First name of the other participant
+- `driver_id` (TEXT) - Driver's user ID
+- `rider_id` (TEXT) - Rider's user ID
 - `message` (TEXT) - Message content
 - `created_at` (TIMESTAMP) - When message was sent
+
+## URL Parameters
+
+For driver/rider chat access:
+```
+https://your-app.com/chat?tripId=288&userId=21&userType=driver&firstName=John&otherName=Sarah&driverId=21&riderId=1
+```
+
+- `tripId`: Trip/ride identifier (required)
+- `userId`: Current user's ID (required)
+- `userType`: 'driver', 'rider', or 'admin' (required)
+- `firstName`: Current user's first name (optional)
+- `otherName`: Other participant's first name (optional)
+- `driverId`: Driver's user ID (optional)
+- `riderId`: Rider's user ID (optional)
 
 ## Cleanup Strategy
 
