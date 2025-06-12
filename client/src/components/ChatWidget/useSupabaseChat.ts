@@ -7,6 +7,9 @@ interface UseChatProps {
   userId: string;
   userType: 'driver' | 'rider' | 'admin';
   firstName?: string;
+  otherName?: string;
+  driverId?: string;
+  riderId?: string;
   supabaseUrl?: string;
   supabaseKey?: string;
 }
@@ -17,11 +20,14 @@ interface DatabaseMessage {
   user_id: string;
   user_type: string;
   first_name?: string;
+  other_name?: string;
+  driver_id?: string;
+  rider_id?: string;
   message: string;
   created_at: string;
 }
 
-export const useSupabaseChat = ({ tripId, userId, userType, firstName, supabaseUrl, supabaseKey }: UseChatProps) => {
+export const useSupabaseChat = ({ tripId, userId, userType, firstName, otherName, driverId, riderId, supabaseUrl, supabaseKey }: UseChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -60,6 +66,9 @@ export const useSupabaseChat = ({ tripId, userId, userType, firstName, supabaseU
           userId: dbMsg.user_id,
           userType: dbMsg.user_type as 'driver' | 'rider' | 'admin',
           firstName: dbMsg.first_name,
+          otherName: dbMsg.other_name,
+          driverId: dbMsg.driver_id,
+          riderId: dbMsg.rider_id,
           message: dbMsg.message,
           timestamp: dbMsg.created_at
         }));
@@ -84,6 +93,9 @@ export const useSupabaseChat = ({ tripId, userId, userType, firstName, supabaseU
       userId,
       userType,
       firstName,
+      otherName,
+      driverId,
+      riderId,
       url: url.substring(0, 20) + '...'
     });
 
@@ -175,7 +187,7 @@ export const useSupabaseChat = ({ tripId, userId, userType, firstName, supabaseU
       setError(`Failed to initialize chat: ${err.message}`);
       return () => {};
     }
-  }, [tripId, userId, userType, firstName, supabaseUrl, supabaseKey, loadMessageHistory]);
+  }, [tripId, userId, userType, firstName, otherName, driverId, riderId, supabaseUrl, supabaseKey, loadMessageHistory]);
 
   const saveMessageToDatabase = useCallback(async (message: Message) => {
     if (!supabaseRef.current) return;
@@ -188,6 +200,9 @@ export const useSupabaseChat = ({ tripId, userId, userType, firstName, supabaseU
           user_id: message.userId,
           user_type: message.userType,
           first_name: message.firstName,
+          other_name: message.otherName,
+          driver_id: message.driverId,
+          rider_id: message.riderId,
           message: message.message,
           created_at: message.timestamp
         });
@@ -237,6 +252,9 @@ export const useSupabaseChat = ({ tripId, userId, userType, firstName, supabaseU
         userId,
         userType,
         firstName,
+        otherName,
+        driverId,
+        riderId,
         message,
         timestamp: new Date().toISOString()
       };
@@ -258,7 +276,7 @@ export const useSupabaseChat = ({ tripId, userId, userType, firstName, supabaseU
         cleanupOldMessages();
       }
     }
-  }, [userId, userType, firstName, isConnected, saveMessageToDatabase, cleanupOldMessages]);
+  }, [userId, userType, firstName, otherName, driverId, riderId, isConnected, saveMessageToDatabase, cleanupOldMessages]);
 
   const startTyping = useCallback(() => {
     if (!channelRef.current || !isConnected) return;

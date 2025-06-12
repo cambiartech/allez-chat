@@ -9,6 +9,9 @@ const WebViewChat: React.FC = () => {
     userId: string;
     userType: 'driver' | 'rider' | 'admin';
     firstName?: string;
+    otherName?: string;
+    driverId?: string;
+    riderId?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -18,16 +21,22 @@ const WebViewChat: React.FC = () => {
     const tripId = urlParams.get('tripId');
     const userId = urlParams.get('userId');
     const userType = urlParams.get('userType') as 'driver' | 'rider' | 'admin';
-    const firstName = urlParams.get('firstName'); // Extract firstName from URL
+    const firstName = urlParams.get('firstName');
+    const otherName = urlParams.get('otherName');
+    const driverId = urlParams.get('driverId');
+    const riderId = urlParams.get('riderId');
     
-    console.log('URL Parameters:', { tripId, userId, userType, firstName });
+    console.log('URL Parameters:', { tripId, userId, userType, firstName, otherName, driverId, riderId });
     
     if (tripId && userId && userType) {
       setChatParams({
         tripId,
         userId,
         userType,
-        firstName: firstName || undefined // Use firstName from URL or undefined
+        firstName: firstName || undefined,
+        otherName: otherName || undefined,
+        driverId: driverId || undefined,
+        riderId: riderId || undefined
       });
     } else {
       console.error('Missing required URL parameters: tripId, userId, userType');
@@ -41,13 +50,16 @@ const WebViewChat: React.FC = () => {
         <p>Required URL parameters are missing.</p>
         <p>Expected format:</p>
         <code>
-          ?tripId=12345&userId=user123&userType=rider&firstName=John
+          ?tripId=12345&userId=user123&userType=driver&firstName=John&otherName=Sarah&driverId=123&riderId=456
         </code>
         <ul>
           <li><strong>tripId</strong>: The trip/ride ID (required)</li>
           <li><strong>userId</strong>: Unique user identifier (required)</li>
           <li><strong>userType</strong>: driver, rider, or admin (required)</li>
-          <li><strong>firstName</strong>: User's first name (optional, defaults to userType)</li>
+          <li><strong>firstName</strong>: User's first name (optional)</li>
+          <li><strong>otherName</strong>: Other person's name (optional)</li>
+          <li><strong>driverId</strong>: Driver's ID (optional)</li>
+          <li><strong>riderId</strong>: Rider's ID (optional)</li>
         </ul>
       </ErrorContainer>
     );
@@ -60,6 +72,9 @@ const WebViewChat: React.FC = () => {
         userId={chatParams.userId}
         userType={chatParams.userType}
         firstName={chatParams.firstName}
+        otherName={chatParams.otherName}
+        driverId={chatParams.driverId}
+        riderId={chatParams.riderId}
         initiallyOpen={true}
       />
     </Container>

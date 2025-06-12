@@ -13,6 +13,9 @@ interface ChatWidgetProps {
   userId: string;
   userType: 'driver' | 'rider' | 'admin';
   firstName?: string;
+  otherName?: string;
+  driverId?: string;
+  riderId?: string;
   initiallyOpen?: boolean;
   serverUrl?: string;
 }
@@ -22,6 +25,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   userId,
   userType,
   firstName,
+  otherName,
+  driverId,
+  riderId,
   initiallyOpen = false,
   serverUrl
 }) => {
@@ -39,6 +45,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     userId, 
     userType,
     firstName,
+    otherName,
+    driverId,
+    riderId,
     supabaseUrl: config.SUPABASE_URL,
     supabaseKey: config.SUPABASE_ANON_KEY
   });

@@ -20,13 +20,26 @@ export const MessageList: React.FC<MessageListProps> = ({
   isLoadingHistory = false
 }) => {
   const getDisplayName = (msg: Message) => {
+    // For admin messages, always show "Admin"
+    if (msg.userType === 'admin') {
+      return 'Admin';
+    }
+
+    // For own messages, show own firstName if available
+    const isOwnMessage = msg.userId === currentUserId && msg.userType === currentUserType;
+    if (isOwnMessage) {
+      return msg.firstName || (msg.userType === 'driver' ? 'Driver' : 'Rider');
+    }
+
+    // For other person's messages, show their name
+    // The message should contain the sender's firstName and the otherName
+    // We want to show the sender's firstName to the viewer
     if (msg.firstName) {
       return msg.firstName;
     }
+
     // Fallback to default labels
-    return msg.userType === 'driver' ? 'Driver' : 
-           msg.userType === 'rider' ? 'Rider' : 
-           'Admin';
+    return msg.userType === 'driver' ? 'Driver' : 'Rider';
   };
 
   const getDisplayIcon = (userType: string) => {
