@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import ChatWidget from './ChatWidget';
 
@@ -6,6 +6,7 @@ interface WebViewChatProps {
   tripId?: string;
   userId: string;
   userType: 'driver' | 'rider' | 'admin';
+  firstName?: string;
   serverUrl: string;
 }
 
@@ -14,10 +15,24 @@ const WebViewChat: React.FC<WebViewChatProps> = ({
   tripId: initialTripId,
   userId,
   userType,
+  firstName: initialFirstName,
   serverUrl
 }) => {
   const [tripId, setTripId] = useState(initialTripId || '');
+  const [firstName, setFirstName] = useState(initialFirstName);
   const [showChat, setShowChat] = useState(userType !== 'admin');
+
+  useEffect(() => {
+    // If firstName not provided as prop, try to extract from URL
+    if (!firstName) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlFirstName = urlParams.get('firstName');
+      if (urlFirstName) {
+        console.log('WebViewChat - Extracted firstName from URL:', urlFirstName);
+        setFirstName(urlFirstName);
+      }
+    }
+  }, [firstName]);
 
   if (userType === 'admin' && !showChat) {
     return (
@@ -49,6 +64,7 @@ const WebViewChat: React.FC<WebViewChatProps> = ({
         tripId={tripId}
         userId={userId}
         userType={userType}
+        firstName={firstName}
         serverUrl={serverUrl}
         initiallyOpen={true}
       />
