@@ -49,6 +49,8 @@ export const useSupabaseChat = ({ tripId, userId, userType, firstName, otherName
         .eq('trip_id', tripId)
         .order('created_at', { ascending: true });
 
+      console.log('Database query result:', { data, error, dataLength: data?.length });
+
       if (error) {
         console.error('Error loading message history:', error);
         // Don't set error state for missing table - it's optional
@@ -75,6 +77,9 @@ export const useSupabaseChat = ({ tripId, userId, userType, firstName, otherName
         
         console.log(`Loaded ${historyMessages.length} messages from history`);
         setMessages(historyMessages);
+      } else {
+        console.log('No messages found in database for trip:', tripId);
+        setMessages([]); // Ensure messages array is empty
       }
     } catch (error) {
       console.error('Error loading message history:', error);
