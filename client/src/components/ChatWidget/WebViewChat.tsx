@@ -2,70 +2,64 @@ import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import ChatWidget from './ChatWidget';
 
-interface WebViewChatProps {
-  tripId?: string;
-  userId: string;
-  userType: 'driver' | 'rider' | 'admin';
-  firstName?: string;
-  serverUrl: string;
-}
-
-// This component will be rendered in a standalone HTML page
-const WebViewChat: React.FC<WebViewChatProps> = ({
-  tripId: initialTripId,
-  userId,
-  userType,
-  firstName: initialFirstName,
-  serverUrl
-}) => {
-  const [tripId, setTripId] = useState(initialTripId || '');
-  const [firstName, setFirstName] = useState(initialFirstName);
-  const [showChat, setShowChat] = useState(userType !== 'admin');
+// This component will be rendered in a standalone HTML page and extracts params from URL
+const WebViewChat: React.FC = () => {
+  const [chatParams, setChatParams] = useState<{
+    tripId: string;
+    userId: string;
+    userType: 'driver' | 'rider' | 'admin';
+    firstName?: string;
+  } | null>(null);
 
   useEffect(() => {
-    // If firstName not provided as prop, try to extract from URL
-    if (!firstName) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlFirstName = urlParams.get('firstName');
-      if (urlFirstName) {
-        console.log('WebViewChat - Extracted firstName from URL:', urlFirstName);
-        setFirstName(urlFirstName);
-      }
+    // Extract parameters from URL query string
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    const tripId = urlParams.get('tripId');
+    const userId = urlParams.get('userId');
+    const userType = urlParams.get('userType') as 'driver' | 'rider' | 'admin';
+    const firstName = urlParams.get('firstName'); // Extract firstName from URL
+    
+    console.log('URL Parameters:', { tripId, userId, userType, firstName });
+    
+    if (tripId && userId && userType) {
+      setChatParams({
+        tripId,
+        userId,
+        userType,
+        firstName: firstName || undefined // Use firstName from URL or undefined
+      });
+    } else {
+      console.error('Missing required URL parameters: tripId, userId, userType');
     }
-  }, [firstName]);
+  }, []);
 
-  if (userType === 'admin' && !showChat) {
+  if (!chatParams) {
     return (
-      <AdminContainer>
-        <h2>Enter Trip Details</h2>
-        <InputGroup>
-          <label htmlFor="tripId">Trip ID:</label>
-          <input
-            id="tripId"
-            type="text"
-            value={tripId}
-            onChange={(e) => setTripId(e.target.value)}
-            placeholder="Enter Trip ID"
-          />
-          <button 
-            onClick={() => setShowChat(true)}
-            disabled={!tripId.trim()}
-          >
-            Join Chat
-          </button>
-        </InputGroup>
-      </AdminContainer>
+      <ErrorContainer>
+        <h2>Chat Configuration Error</h2>
+        <p>Required URL parameters are missing.</p>
+        <p>Expected format:</p>
+        <code>
+          ?tripId=12345&userId=user123&userType=rider&firstName=John
+        </code>
+        <ul>
+          <li><strong>tripId</strong>: The trip/ride ID (required)</li>
+          <li><strong>userId</strong>: Unique user identifier (required)</li>
+          <li><strong>userType</strong>: driver, rider, or admin (required)</li>
+          <li><strong>firstName</strong>: User's first name (optional, defaults to userType)</li>
+        </ul>
+      </ErrorContainer>
     );
   }
 
   return (
     <Container>
       <ChatWidget
-        tripId={tripId}
-        userId={userId}
-        userType={userType}
-        firstName={firstName}
-        serverUrl={serverUrl}
+        tripId={chatParams.tripId}
+        userId={chatParams.userId}
+        userType={chatParams.userType}
+        firstName={chatParams.firstName}
         initiallyOpen={true}
       />
     </Container>
@@ -73,69 +67,46 @@ const WebViewChat: React.FC<WebViewChatProps> = ({
 };
 
 const Container = styled.div`
-  width: 100%;
+  width: 100vw;
   height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: white;
+  overflow: hidden;
 `;
 
-const AdminContainer = styled.div`
-  width: 100%;
-  max-width: 400px;
-  margin: 40px auto;
-  padding: 20px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-
+const ErrorContainer = styled.div`
+  padding: 40px;
+  max-width: 600px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
   h2 {
-    margin: 0 0 20px;
-    color: #333;
-    text-align: center;
+    color: #d32f2f;
+    margin-bottom: 20px;
   }
-`;
-
-const InputGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-
-  label {
-    font-weight: 500;
-    color: #666;
+  
+  p {
+    margin-bottom: 15px;
+    line-height: 1.5;
   }
-
-  input {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 16px;
-
-    &:focus {
-      outline: none;
-      border-color: #007AFF;
-    }
-  }
-
-  button {
-    margin-top: 10px;
+  
+  code {
+    background-color: #f5f5f5;
     padding: 10px;
-    background: #007AFF;
-    color: white;
-    border: none;
     border-radius: 4px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: opacity 0.2s;
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    &:hover:not(:disabled) {
-      opacity: 0.9;
+    display: block;
+    margin: 15px 0;
+    font-family: 'Monaco', 'Menlo', monospace;
+    word-break: break-all;
+  }
+  
+  ul {
+    margin-top: 20px;
+    
+    li {
+      margin-bottom: 8px;
+      
+      strong {
+        color: #1976d2;
+      }
     }
   }
 `;
