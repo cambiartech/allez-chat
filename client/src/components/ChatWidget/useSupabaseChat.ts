@@ -65,6 +65,7 @@ export const useSupabaseChat = ({ tripId, userId, userType, firstName, otherName
         const sortedData = data.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         
         const historyMessages: Message[] = sortedData.map((dbMsg: DatabaseMessage) => ({
+          id: dbMsg.id?.toString() || Date.now().toString(),
           userId: dbMsg.user_id,
           userType: dbMsg.user_type as 'driver' | 'rider' | 'admin',
           firstName: dbMsg.first_name,
@@ -195,93 +196,83 @@ export const useSupabaseChat = ({ tripId, userId, userType, firstName, otherName
   }, [tripId, userId, userType, firstName, otherName, driverId, riderId, supabaseUrl, supabaseKey, loadMessageHistory]);
 
   const saveMessageToDatabase = useCallback(async (message: Message) => {
-    if (!supabaseRef.current) return;
+    if (!supabaseRef.current) {
+      console.log('No Supabase client available for saving message');
+      return;
+    }
+    
+    console.log('Attempting to save message to database:', message);
     
     try {
-      const { error } = await supabaseRef.current
+      const messageData = {
+        trip_id: tripId,
+        user_id: message.userId,
+        user_type: message.userType,
+        first_name: message.firstName,
+        other_name: message.otherName,
+        driver_id: message.driverId,
+        rider_id: message.riderId,
+        message: message.message,
+        created_at: message.timestamp
+      };
+      
+      console.log('Message data being inserted:', messageData);
+
+      const { data, error } = await supabaseRef.current
         .from('chat_messages')
-        .insert({
-          trip_id: tripId,
-          user_id: message.userId,
-          user_type: message.userType,
-          first_name: message.firstName,
-          other_name: message.otherName,
-          driver_id: message.driverId,
-          rider_id: message.riderId,
-          message: message.message,
-          created_at: message.timestamp
-        });
+        .insert(messageData);
 
       if (error) {
         console.error('Error saving message to database:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         // Don't throw error - real-time still works without persistence
+      } else {
+        console.log('Message saved successfully to database:', data);
       }
     } catch (error) {
-      console.error('Error saving message to database:', error);
+      console.error('Exception while saving message to database:', error);
     }
   }, [tripId]);
 
-  const cleanupOldMessages = useCallback(async () => {
-    if (!supabaseRef.current) return;
-    
-    try {
-      // Delete messages older than 2 hours
-      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-      
-      const { error } = await supabaseRef.current
-        .from('chat_messages')
-        .delete()
-        .lt('created_at', twoHoursAgo);
-
-      if (error) {
-        console.error('Error cleaning up old messages:', error);
-      } else {
-        console.log('Cleaned up messages older than 2 hours');
-      }
-    } catch (error) {
-      console.error('Error cleaning up old messages:', error);
-    }
-  }, []);
-
-  const sendMessage = useCallback(async (message: string | Message[]) => {
-    if (!channelRef.current || !isConnected) {
-      console.warn('Attempting to send message while not connected');
+  const sendMessage = useCallback(async (messageText: string) => {
+    if (!supabaseRef.current || !channelRef.current) {
+      console.log('Cannot send message - missing Supabase client or channel');
       return;
     }
 
-    if (Array.isArray(message)) {
-      console.log('Adding batch messages:', message);
-      setMessages(prevMessages => [...prevMessages, ...message]);
-    } else {
-      const newMessage: Message = {
-        userId,
-        userType,
-        firstName,
-        otherName,
-        driverId,
-        riderId,
-        message,
-        timestamp: new Date().toISOString()
-      };
-      
-      console.log('Sending message:', newMessage);
-      
-      // Save to database first (for persistence)
-      await saveMessageToDatabase(newMessage);
-      
-      // Then broadcast the message to all subscribers (for real-time)
-      channelRef.current.send({
-        type: 'broadcast',
-        event: 'message',
-        payload: newMessage
-      });
+    const message: Message = {
+      id: Date.now().toString(),
+      userId,
+      userType,
+      firstName,
+      otherName,
+      driverId,
+      riderId,
+      message: messageText,
+      timestamp: new Date().toISOString()
+    };
 
-      // Periodically cleanup old messages (every 10th message)
-      if (Math.random() < 0.1) {
-        cleanupOldMessages();
-      }
-    }
-  }, [userId, userType, firstName, otherName, driverId, riderId, isConnected, saveMessageToDatabase, cleanupOldMessages]);
+    console.log('Sending message:', message);
+
+    // Save to database first
+    console.log('About to save message to database...');
+    await saveMessageToDatabase(message);
+    console.log('Finished saving message to database');
+
+    // Then broadcast to real-time channel
+    console.log('About to broadcast message to channel...');
+    const broadcastResult = channelRef.current.send({
+      type: 'broadcast',
+      event: 'message',
+      payload: message
+    });
+    console.log('Broadcast result:', broadcastResult);
+  }, [userId, userType, firstName, otherName, driverId, riderId, saveMessageToDatabase]);
 
   const startTyping = useCallback(() => {
     if (!channelRef.current || !isConnected) return;

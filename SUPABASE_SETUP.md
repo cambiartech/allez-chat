@@ -124,4 +124,30 @@ Messages are automatically deleted after 2 hours to:
 For production, you might want to:
 - Increase retention to 24 hours
 - Archive important messages
-- Implement user-specific retention policies 
+- Implement user-specific retention policies
+
+## Add Missing Columns to Existing Table
+
+If you already have a `chat_messages` table, run this SQL to add the missing columns:
+
+```sql
+-- Add missing columns to existing chat_messages table
+ALTER TABLE chat_messages 
+ADD COLUMN IF NOT EXISTS first_name TEXT,
+ADD COLUMN IF NOT EXISTS other_name TEXT,
+ADD COLUMN IF NOT EXISTS driver_id TEXT,
+ADD COLUMN IF NOT EXISTS rider_id TEXT;
+```
+
+## Real-time Setup
+
+1. Go to your Supabase project dashboard
+2. Navigate to Database → Replication
+3. Enable replication for the `chat_messages` table
+4. This allows real-time subscriptions to work
+
+## Environment Variables
+
+Make sure your app has access to:
+- `REACT_APP_SUPABASE_URL`: Your Supabase project URL
+- `REACT_APP_SUPABASE_ANON_KEY`: Your Supabase anonymous key 
