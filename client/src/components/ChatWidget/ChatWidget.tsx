@@ -99,6 +99,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
               tripId={tripId}
               onClose={() => !isAppView && setIsOpen(false)}
               isConnected={isConnected}
+              userType={userType}
+              messages={messages}
             />
 
             {error ? (
