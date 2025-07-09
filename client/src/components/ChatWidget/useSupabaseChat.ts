@@ -296,19 +296,14 @@ export const useSupabaseChat = ({ tripId, userId, userType, firstName, otherName
       // Send count update to each recipient
       for (const recipient of recipients) {
         try {
-          // Use local server in development, external API in production
+          // Use local server in development, Netlify function in production
           const apiUrl = process.env.NODE_ENV === 'development' 
             ? 'http://localhost:5001/api/chat/count-update'
-            : 'http://allez.us-east-1.elasticbeanstalk.com/api/chat/count-update';
+            : '/.netlify/functions/count-update';
           
           const headers: Record<string, string> = {
             'Content-Type': 'application/json'
           };
-          
-          // Add API key for direct external API calls (production)
-          if (process.env.NODE_ENV !== 'development') {
-            headers['X-API-Key'] = 'HKeGw>L/v9-3W4/';
-          }
           
           const response = await fetch(apiUrl, {
             method: 'POST',
