@@ -6,6 +6,7 @@ import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { useSupabaseChat } from './useSupabaseChat';
+import { useChat } from './useChat';
 import config from '../../config';
 
 interface ChatWidgetProps {
@@ -41,16 +42,18 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     riderId
   });
 
-  const {
-    messages,
-    typingUsers,
-    isConnected,
-    error,
-    isLoadingHistory,
-    sendMessage,
-    startTyping,
-    stopTyping
-  } = useSupabaseChat({ 
+  // Use Socket.IO chat for drivers and riders, Supabase chat for admins
+  const useSocketChat = userType === 'driver' || userType === 'rider';
+  
+  const socketChatResult = useChat({ 
+    tripId, 
+    userId, 
+    userType,
+    firstName,
+    serverUrl: serverUrl || config.SOCKET_URL
+  });
+  
+  const supabaseChatResult = useSupabaseChat({ 
     tripId, 
     userId, 
     userType,
@@ -61,6 +64,19 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     supabaseUrl: config.SUPABASE_URL,
     supabaseKey: config.SUPABASE_ANON_KEY
   });
+
+  const {
+    messages,
+    typingUsers,
+    isConnected,
+    error,
+    sendMessage,
+    startTyping,
+    stopTyping
+  } = useSocketChat ? socketChatResult : supabaseChatResult;
+
+  // isLoadingHistory is only available in Supabase chat
+  const isLoadingHistory = useSocketChat ? false : supabaseChatResult.isLoadingHistory;
 
   const [isOpen, setIsOpen] = useState(initiallyOpen);
   const [inputMessage, setInputMessage] = useState('');
