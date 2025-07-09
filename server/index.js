@@ -38,7 +38,7 @@ class ChatRoom {
 
   async addMessage(message) {
     try {
-      // Save to MongoDB (only non-system messages)
+      // Save to MongoDB (only non-system messages) with timeout
       const newMessage = new Message({
         tripId: this.tripId,
         userId: message.userId,
@@ -48,13 +48,20 @@ class ChatRoom {
         timestamp: new Date(message.timestamp),
         isSystemMessage: message.isSystemMessage || false
       });
-      await newMessage.save();
+      
+      // Add timeout to prevent hanging
+      await Promise.race([
+        newMessage.save(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('MongoDB save timeout')), 3000))
+      ]);
+      
       console.log('Message saved to MongoDB:', message);
     } catch (err) {
-      console.error('Error saving message to MongoDB:', err);
+      console.error('Error saving message to MongoDB:', err.message);
+      // Don't let MongoDB issues block the chat flow
     }
 
-    // Keep in memory for immediate access
+    // Keep in memory for immediate access (this should always work)
     this.messages.push(message);
     // Keep last 50 messages in memory
     if (this.messages.length > 50) {
@@ -121,9 +128,13 @@ const chatRooms = new Map(); // tripId -> ChatRoom
 
 // Function to send count update to external API
 async function sendCountUpdate(tripId, recipientId, recipientType, senderId, senderType, count) {
+  console.log(`🔔 ATTEMPTING COUNT UPDATE: trip=${tripId}, recipient=${recipientId} (${recipientType}), sender=${senderId} (${senderType}), count=${count}`);
+  
   try {
     const apiUrl = process.env.ALLEZ_API_URL || 'http://allez.us-east-1.elasticbeanstalk.com/api/chat/count-update';
     const apiKey = process.env.ALLEZ_API_KEY || 'HKeGw>L/v9-3W4/';
+    
+    console.log(`📡 Sending to API: ${apiUrl}`);
     
     const response = await axios.post(apiUrl, {
       tripId: tripId,
@@ -140,9 +151,9 @@ async function sendCountUpdate(tripId, recipientId, recipientType, senderId, sen
       timeout: 5000 // 5 second timeout
     });
     
-    console.log(`Count update sent successfully for trip ${tripId}:`, response.data);
+    console.log(`✅ Count update sent successfully for trip ${tripId}:`, response.data);
   } catch (error) {
-    console.error(`Failed to send count update for trip ${tripId}:`, error.message);
+    console.error(`❌ Failed to send count update for trip ${tripId}:`, error.message);
     // Don't throw error - we don't want to break chat functionality if API is down
   }
 }
@@ -154,18 +165,21 @@ async function getUnreadMessageCount(tripId, userId, userType) {
     
     // For now, we'll use a simple count of recent messages not sent by this user
     // You might want to implement a more sophisticated unread tracking system
-    const count = await Message.countDocuments({
-      tripId: tripId,
-      userId: { $ne: userId }, // Messages not sent by this user
-      isSystemMessage: { $ne: true },
-      // You could add a 'readBy' field to track actual read status
-      timestamp: { $gte: new Date(Date.now() - unreadHours * 60 * 60 * 1000) } // Configurable hours
-    });
+    const count = await Promise.race([
+      Message.countDocuments({
+        tripId: tripId,
+        userId: { $ne: userId }, // Messages not sent by this user
+        isSystemMessage: { $ne: true },
+        // You could add a 'readBy' field to track actual read status
+        timestamp: { $gte: new Date(Date.now() - unreadHours * 60 * 60 * 1000) } // Configurable hours
+      }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('MongoDB timeout')), 3000))
+    ]);
     
     return Math.min(count, 99); // Cap at 99 for UI purposes
   } catch (error) {
-    console.error('Error getting unread count:', error);
-    return 1; // Default to 1 if we can't calculate
+    console.error('Error getting unread count, using default:', error.message);
+    return 1; // Default to 1 if we can't calculate - this ensures count updates still work
   }
 }
 
@@ -199,8 +213,13 @@ io.on('connection', (socket) => {
 
   // Handle chat messages
   socket.on('send_message', async ({ tripId, message, userType, userId, firstName }) => {
+    console.log(`💬 MESSAGE RECEIVED: trip=${tripId}, user=${userId} (${userType}), message="${message}"`);
+    
     const room = chatRooms.get(tripId);
-    if (!room) return;
+    if (!room) {
+      console.log(`❌ Room not found for trip ${tripId}`);
+      return;
+    }
 
     const messageData = {
       userId,
@@ -211,26 +230,33 @@ io.on('connection', (socket) => {
       isSystemMessage: false
     };
 
+    console.log(`💾 Saving message to room...`);
     await room.addMessage(messageData);
+    console.log(`📡 Broadcasting message to room ${tripId}...`);
     io.to(tripId).emit('receive_message', messageData);
+    
+    console.log(`📤 Message broadcast to room ${tripId}`);
 
     // Send count updates to recipients (users who didn't send the message)
+    console.log(`🔄 Starting count update process for trip ${tripId}`);
     try {
       const currentUsers = Array.from(room.users.values());
-      console.log(`Processing count updates for ${currentUsers.length} users in trip ${tripId}`);
+      console.log(`👥 Processing count updates for ${currentUsers.length} users in trip ${tripId}`);
+      console.log(`👥 Current users:`, currentUsers.map(u => `${u.userId} (${u.userType})`));
       
       for (const user of currentUsers) {
         // Skip the sender
         if (user.userId === userId) {
-          console.log(`Skipping sender ${userId} for count update`);
+          console.log(`⏭️  Skipping sender ${userId} for count update`);
           continue;
         }
         
-        console.log(`Calculating unread count for user ${user.userId} (${user.userType})`);
+        console.log(`🧮 Calculating unread count for user ${user.userId} (${user.userType})`);
         // Get unread count for this recipient
         const unreadCount = await getUnreadMessageCount(tripId, user.userId, user.userType);
         
-        console.log(`Sending count update: trip=${tripId}, recipient=${user.userId} (${user.userType}), sender=${userId} (${userType}), count=${unreadCount}`);
+        console.log(`📊 Unread count calculated: ${unreadCount}`);
+        console.log(`📤 Sending count update: trip=${tripId}, recipient=${user.userId} (${user.userType}), sender=${userId} (${userType}), count=${unreadCount}`);
         
         // Send count update to external API
         await sendCountUpdate(
@@ -242,8 +268,9 @@ io.on('connection', (socket) => {
           unreadCount
         );
       }
+      console.log(`✅ Count update process completed for trip ${tripId}`);
     } catch (error) {
-      console.error('Error sending count updates:', error);
+      console.error('❌ Error sending count updates:', error);
       // Don't break the chat functionality if count updates fail
     }
   });
