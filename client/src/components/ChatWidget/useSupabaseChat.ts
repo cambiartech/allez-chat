@@ -376,14 +376,9 @@ export const useSupabaseChat = ({ tripId, userId, userType, firstName, otherName
     });
     console.log('Broadcast result:', broadcastResult);
 
-    // Send count updates to Socket.IO server for mobile app notifications
-    // Only send count updates if user is admin (drivers/riders use Socket.IO which handles this)
-    if (userType === 'admin') {
-      console.log('About to send count updates...');
-      await sendCountUpdates(message);
-    } else {
-      console.log('Skipping count updates - user is not admin, Socket.IO handles this');
-    }
+    // Send count updates for all users when using Supabase chat
+    console.log('About to send count updates...');
+    await sendCountUpdates(message);
   }, [userId, userType, firstName, otherName, driverId, riderId, saveMessageToDatabase, sendCountUpdates]);
 
   const startTyping = useCallback(() => {
