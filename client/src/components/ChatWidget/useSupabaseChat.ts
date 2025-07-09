@@ -28,6 +28,16 @@ interface DatabaseMessage {
 }
 
 export const useSupabaseChat = ({ tripId, userId, userType, firstName, otherName, driverId, riderId, supabaseUrl, supabaseKey }: UseChatProps) => {
+  console.log('🔍 useSupabaseChat hook initialized with:', {
+    tripId,
+    userId,
+    userType,
+    firstName,
+    otherName,
+    driverId,
+    riderId
+  });
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -239,11 +249,109 @@ export const useSupabaseChat = ({ tripId, userId, userType, firstName, otherName
     }
   }, [tripId]);
 
+  const sendCountUpdates = useCallback(async (message: Message) => {
+    try {
+      console.log('🔍 sendCountUpdates called with message:', {
+        userType: message.userType,
+        driverId: message.driverId,
+        riderId: message.riderId,
+        userId: message.userId
+      });
+      
+      // Determine recipients based on user type
+      const recipients = [];
+      
+      if (message.userType === 'driver' && message.riderId) {
+        recipients.push({
+          id: message.riderId,
+          type: 'passenger'
+        });
+      } else if (message.userType === 'rider' && message.driverId) {
+        recipients.push({
+          id: message.driverId,
+          type: 'driver'
+        });
+      } else if (message.userType === 'admin') {
+        // Admin messages go to both driver and rider
+        // Use message IDs if available, otherwise use fallback values
+        const driverIdToUse = message.driverId || driverId || '1566';
+        const riderIdToUse = message.riderId || riderId || '6823';
+        
+        if (driverIdToUse) {
+          recipients.push({
+            id: driverIdToUse,
+            type: 'driver'
+          });
+        }
+        if (riderIdToUse) {
+          recipients.push({
+            id: riderIdToUse,
+            type: 'passenger'
+          });
+        }
+      }
+
+      console.log('Sending count updates to recipients:', recipients);
+
+      // Send count update to each recipient
+      for (const recipient of recipients) {
+        try {
+          // Use local server in development, external API in production
+          const apiUrl = process.env.NODE_ENV === 'development' 
+            ? 'http://localhost:5001/api/chat/count-update'
+            : 'http://allez.us-east-1.elasticbeanstalk.com/api/chat/count-update';
+          
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+          };
+          
+          // Add API key for direct external API calls (production)
+          if (process.env.NODE_ENV !== 'development') {
+            headers['X-API-Key'] = 'HKeGw>L/v9-3W4/';
+          }
+          
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              tripId: tripId,
+              recipientId: recipient.id,
+              recipientType: recipient.type,
+              count: 1, // Default count, could be calculated based on unread messages
+              senderId: message.userId,
+              senderType: message.userType === 'rider' ? 'passenger' : message.userType
+            })
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log(`✅ Count update sent to ${recipient.type} ${recipient.id}:`, result);
+          } else {
+            console.error(`❌ Failed to send count update to ${recipient.type} ${recipient.id}:`, response.status);
+          }
+        } catch (error) {
+          console.error(`❌ Error sending count update to ${recipient.type} ${recipient.id}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error in sendCountUpdates:', error);
+      // Don't throw error - chat should continue working even if count updates fail
+    }
+  }, [tripId, driverId, riderId]);
+
   const sendMessage = useCallback(async (messageText: string) => {
     if (!supabaseRef.current || !channelRef.current) {
       console.log('Cannot send message - missing Supabase client or channel');
       return;
     }
+
+    console.log('🔍 sendMessage called with hook values:', {
+      userId,
+      userType,
+      firstName,
+      driverId,
+      riderId
+    });
 
     const message: Message = {
       id: Date.now().toString(),
@@ -272,7 +380,16 @@ export const useSupabaseChat = ({ tripId, userId, userType, firstName, otherName
       payload: message
     });
     console.log('Broadcast result:', broadcastResult);
-  }, [userId, userType, firstName, otherName, driverId, riderId, saveMessageToDatabase]);
+
+    // Send count updates to Socket.IO server for mobile app notifications
+    // Only send count updates if user is admin (drivers/riders use Socket.IO which handles this)
+    if (userType === 'admin') {
+      console.log('About to send count updates...');
+      await sendCountUpdates(message);
+    } else {
+      console.log('Skipping count updates - user is not admin, Socket.IO handles this');
+    }
+  }, [userId, userType, firstName, otherName, driverId, riderId, saveMessageToDatabase, sendCountUpdates]);
 
   const startTyping = useCallback(() => {
     if (!channelRef.current || !isConnected) return;

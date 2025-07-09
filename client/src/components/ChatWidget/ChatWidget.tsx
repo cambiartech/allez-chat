@@ -31,6 +31,16 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   initiallyOpen = false,
   serverUrl
 }) => {
+  console.log('🔍 ChatWidget props received:', {
+    tripId,
+    userId,
+    userType,
+    firstName,
+    otherName,
+    driverId,
+    riderId
+  });
+
   const {
     messages,
     typingUsers,

@@ -294,6 +294,32 @@ io.on('connection', (socket) => {
   });
 });
 
+// Add an endpoint for count updates (for admin interface)
+app.post('/api/chat/count-update', async (req, res) => {
+  try {
+    const { tripId, recipientId, recipientType, senderId, senderType, count } = req.body;
+    
+    console.log(`🔔 Admin count update request: trip=${tripId}, recipient=${recipientId} (${recipientType}), sender=${senderId} (${senderType}), count=${count}`);
+    
+    // Call the existing sendCountUpdate function
+    await sendCountUpdate(tripId, recipientId, recipientType, senderId, senderType, count);
+    
+    res.json({ 
+      success: true, 
+      message: 'Count update sent successfully',
+      tripId,
+      recipientId,
+      count
+    });
+  } catch (error) {
+    console.error('❌ Error in count update endpoint:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Add an endpoint to check message history
 app.get('/messages/:tripId', async (req, res) => {
   try {

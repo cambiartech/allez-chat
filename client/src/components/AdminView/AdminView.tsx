@@ -3,8 +3,8 @@ import styled from '@emotion/styled';
 import ChatWidget from '../ChatWidget/ChatWidget';
 
 const AdminView = () => {
-  const [userType, setUserType] = useState<'driver' | 'rider' | 'admin'>('rider');
-  const [tripId, setTripId] = useState('12345');
+  const [userType, setUserType] = useState<'driver' | 'rider' | 'admin'>('admin');
+  const [tripId, setTripId] = useState('5529');
 
   return (
     <Container>
@@ -41,6 +41,9 @@ const AdminView = () => {
         tripId={tripId}
         userId={`${userType}-${Math.random().toString(36).substr(2, 9)}`}
         userType={userType}
+        firstName="Admin"
+        driverId="1566"
+        riderId="6823"
       />
     </Container>
   );
