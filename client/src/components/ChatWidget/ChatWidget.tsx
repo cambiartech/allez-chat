@@ -42,8 +42,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     riderId
   });
 
-  // Use Socket.IO chat for drivers and riders, Supabase chat for admins
-  const useSocketChat = userType === 'driver' || userType === 'rider';
+  // Use Socket.IO chat for drivers and riders in development, Supabase for all in production
+  const useSocketChat = (userType === 'driver' || userType === 'rider') && process.env.NODE_ENV === 'development';
   
   const socketChatResult = useChat({ 
     tripId, 
